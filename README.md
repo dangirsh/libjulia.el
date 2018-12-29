@@ -1,7 +1,5 @@
-    (org-md-export-to-markdown nil t)
 
-
-# Buliding
+# Building
 
     make clean
     make all
