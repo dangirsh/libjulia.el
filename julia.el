@@ -1,7 +1,7 @@
 (defconst julia-module-file
   (when module-file-suffix
     (expand-file-name
-     (concat "emacs-julia" module-file-suffix)
+     (concat "julia-core" module-file-suffix)
      (file-name-directory (locate-library "julia"))))
   "The module file for Julia or nil if modules are not supported.")
 
