@@ -6,13 +6,16 @@
   "The module file for Julia or nil if modules are not supported.")
 
 
+(defun julia-as-sexpr (julia-code-str)
+  (julia-eval (format "sprint(io->Meta.show_sexpr(io, Meta.parse(\"%s\")))" julia-code-str)))
+
 (defun julia-load ()
   "Load the Julia dynamic module."
   (if julia-module-file
       (if (file-exists-p julia-module-file)
           (progn
             (load-file julia-module-file)
-            ;; (add-hook 'post-gc-hook #'zmq--cleanup-globrefs)
+            ;; (add-hook 'post-gc-hook #'julia--cleanup-globrefs)
             )
         (when (y-or-n-p "Julia module not found. Build it? ")
           (let ((default-directory (file-name-directory (locate-library "julia"))))
