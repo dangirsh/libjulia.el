@@ -16,25 +16,20 @@ emacs-module-helpers.o: emacs-module-helpers.c emacs-module-helpers.h
 libemacs-module-helpers.so: emacs-module-helpers.o
 	gcc -shared -o libemacs-module-helpers.so emacs-module-helpers.o
 
-emacs-libjulia.o: emacs-libjulia.c
-	gcc -Wall $(JL_FLAGS) -c emacs-libjulia.c
+emacs-julia.o: emacs-julia.c
+	gcc -Wall $(JL_FLAGS) -c emacs-julia.c
 
-emacs-libjulia.so: emacs-libjulia.o libemacs-module-helpers.so
-	gcc -shared $(JL_FLAGS) -L. -lemacs-module-helpers -o emacs-libjulia.so emacs-libjulia.o
+libemacs-julia.so: emacs-julia.o libemacs-module-helpers.so
+	gcc -shared $(JL_FLAGS) -L. -lemacs-module-helpers -o emacs-julia.so emacs-julia.o
 
-# test-emacs-libjulia: emacs-libjulia.so tests.el
-# 	emacs -batch -q -l tests.el -f test-emacs-libjulia
+test-emacs-julia: emacs-julia.so tests.el
+	bin/emacs -batch -q -l tests.el -f test-emacs-julia
 
-# test: test-emacs-libjulia
+test: test-emacs-julia
 
-# all: emacs-libjulia.so
+.PHONY: all clean test
 
-# clean:
-# 	rm *.o *.so
-
-.PHONY: all clean
-
-all: libemacs-module-helpers.so emacs-libjulia.so
+all: libemacs-module-helpers.so libemacs-julia.so
 
 clean:
 	rm *.o *.so

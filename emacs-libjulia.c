@@ -1,25 +1,38 @@
 #include "emacs-module.h"
+#include <stdio.h>
 #include <julia.h>
-/* #include "emacs-module-helpers.h" */
+#include "emacs-module-helpers.h"
 
 int plugin_is_GPL_compatible;
 
+static emacs_value Fjulia_tester (emacs_env *env)
+{
+
+  jl_value_t *ret = jl_eval_string("sqrt(2.0)");
+
+  double ret_unboxed = 0.0;
+
+  /* if (jl_typeis(ret, jl_float64_type)) { */
+  /*   double ret_unboxed = jl_unbox_float64(ret); */
+  /*   printf("sqrt(2.0) in C: %e \n", ret_unboxed); */
+  /* } */
+  /* else { */
+  /*   printf("ERROR: unexpected return type from sqrt(::Float64)\n"); */
+  /* } */
+
+  return env->make_float (env, ret_unboxed);
+}
+
 int emacs_module_init(struct emacs_runtime *ert)
 {
-  /* emacs_env *env = ert->get_environment(ert); */
-
-  /* defconst(env, "GSL-CONST-MKSA-SPEED-OF-LIGHT", */
-  /*          GSL_CONST_MKSA_SPEED_OF_LIGHT, */
-  /*          "Speed of light in vacuum (m/s)."); */
-
-  /* defconst(env, "GSL-CONST-MKSA-PLANCKS-CONSTANT-H", */
-  /*          GSL_CONST_MKSA_PLANCKS_CONSTANT_H, */
-  /*          "Plank's constant, h"); */
-
-  /* provide(env, "gsl-constants"); */
+  emacs_env *env = ert->get_environment(ert);
 
   jl_init();
-  jl_eval_string("print(sqrt(3.0))");
+
+  DEFUN("julia-tester", Fjulia_tester, 1, 1,
+        "testitest\n",
+        0);
+  provide(env, "julia-tester");
 
   return 0;
 }

@@ -5,3 +5,8 @@ NOTE: This project is a WIP.
 
     make clean
     make all
+
+
+# Running Tests
+
+    make test
