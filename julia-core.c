@@ -32,11 +32,40 @@ retrieve_string(emacs_env *env, emacs_value str, ptrdiff_t *size)
 int8_t jl_unbox_bool(jl_value_t *v) JL_NOTSAFEPOINT;
 
 
-#define JULIA_TO_ELISP(env, jl_value, jl_type, c_to_elisp) \
+#define JL_PRIMITIVE_TO_ELISP(env, jl_value, jl_type, c_to_elisp) \
   if (jl_typeis(jl_value, jl_##jl_type##_type)) {          \
     return c_to_elisp(env, jl_unbox_##jl_type(jl_value));  \
   }                                                        \
 
+
+static emacs_value
+jl_to_elisp(emacs_env *env, jl_value_t *jl_value)
+{
+  char *jl_type_name = jl_typeof_str(jl_value);
+  /* printf("Attepting to convert Julia type %s to Elisp\n.", jl_type_name); */
+
+  JL_PRIMITIVE_TO_ELISP(env, jl_value, int8, env->make_integer);
+  JL_PRIMITIVE_TO_ELISP(env, jl_value, uint8, env->make_integer);
+  JL_PRIMITIVE_TO_ELISP(env, jl_value, int16, env->make_integer);
+  JL_PRIMITIVE_TO_ELISP(env, jl_value, uint16, env->make_integer);
+  JL_PRIMITIVE_TO_ELISP(env, jl_value, int32, env->make_integer);
+  JL_PRIMITIVE_TO_ELISP(env, jl_value, uint32, env->make_integer);
+  JL_PRIMITIVE_TO_ELISP(env, jl_value, int64, env->make_integer);
+  JL_PRIMITIVE_TO_ELISP(env, jl_value, uint64, env->make_integer);
+
+  JL_PRIMITIVE_TO_ELISP(env, jl_value, float32, env->make_float);
+  JL_PRIMITIVE_TO_ELISP(env, jl_value, float64, env->make_float);
+
+
+  if (jl_typeis(jl_value, jl_string_type)) {
+    return env->make_string(env, jl_string_data(jl_value), jl_string_len(jl_value));
+  }
+
+  printf("ERROR: Conversion of Julia type %s to Emacs Lisp is an unsupported.\n", jl_type_name);
+
+  // FIXME: Raise error appropriately here.
+  return env->make_float(env, 0.0);
+}
 
 static emacs_value
 Fjulia_eval (emacs_env *env, ptrdiff_t nargs, emacs_value args[], void *data)
@@ -44,24 +73,21 @@ Fjulia_eval (emacs_env *env, ptrdiff_t nargs, emacs_value args[], void *data)
   ptrdiff_t size;
   char *str_arg = retrieve_string(env, args[0], &size);
   jl_value_t *val = jl_eval_string(str_arg);
-
-  JULIA_TO_ELISP(env, val, int8, env->make_integer);
-  JULIA_TO_ELISP(env, val, uint8, env->make_integer);
-  JULIA_TO_ELISP(env, val, int16, env->make_integer);
-  JULIA_TO_ELISP(env, val, uint16, env->make_integer);
-  JULIA_TO_ELISP(env, val, int32, env->make_integer);
-  JULIA_TO_ELISP(env, val, uint32, env->make_integer);
-  JULIA_TO_ELISP(env, val, int64, env->make_integer);
-
-  JULIA_TO_ELISP(env, val, float32, env->make_float)
-  JULIA_TO_ELISP(env, val, float64, env->make_float)
-
-  printf("ERROR: unexpected return type when evaluating Julia string.\n");
-
-  // FIXME: Raise error appropriately here.
-  return env->make_float(env, 0.0);
+  if (jl_exception_occurred()){
+    char *exception_str = jl_typeof_str(jl_exception_occurred());
+    printf("Exception from jl_eval_string: %s \n", exception_str);
+    printf("Returning exception string to Emacs.");
+    return env->make_string(env, exception_str, strlen(exception_str));
+  }
+  else {
+    JL_GC_PUSH1(&val);
+    emacs_value emacs_val = jl_to_elisp(env, val);
+    JL_GC_POP();
+    return emacs_val;
+  }
 }
 
+// Used by julia-simple-test
 static emacs_value Fjulia_sqrt2 (emacs_env *env)
 {
   jl_value_t *ret = jl_eval_string("sqrt(2.0)");
@@ -70,7 +96,6 @@ static emacs_value Fjulia_sqrt2 (emacs_env *env)
 
   if (jl_typeis(ret, jl_float64_type)) {
     ret_unboxed = jl_unbox_float64(ret);
-    printf("sqrt(2.0) in C: %e \n", ret_unboxed);
   }
   else {
     printf("ERROR: unexpected return type from sqrt(::Float64)\n");
@@ -81,7 +106,20 @@ static emacs_value Fjulia_sqrt2 (emacs_env *env)
 
 int emacs_module_init(struct emacs_runtime *ert)
 {
+  /* ######## BEGIN SAFETY BOILERPLATE ######## */
+  // https://phst.github.io/emacs-modules#example
+  /* Fail if Emacs is too old. */
+  assert (ert->size > 0);
+  if ((size_t) ert->size < sizeof *ert)
+    return 1;
   emacs_env *env = ert->get_environment(ert);
+  assert (env->size > 0);
+  if ((size_t) env->size < sizeof *env)
+    return 2;
+  /* Prevent Emacs’s dangerous stack overflow recovery. */
+  if (signal (SIGSEGV, SIG_DFL) == SIG_ERR)
+    return 3;
+  /* ######## END SAFETY BOILERPLATE ######## */
 
   jl_init();
 

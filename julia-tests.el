@@ -1,13 +1,26 @@
 (require 'julia)
 (require 'ert)
 
-(ert-deftest julia-smoke-test ()
+(ert-deftest julia-simple-test ()
   (should (= (julia-sqrt2) (sqrt 2))))
 
+(ert-deftest julia-eval-exception-test ()
+  (let ((ret (julia-eval "undefined_function(1)")))
+    (should (equal ret "UndefVarError"))
+    (should (stringp ret))))
+
 (ert-deftest julia-eval-float-test ()
-  (should (= (julia-eval "sqrt(7)") (sqrt 7)))
-  (should (floatp (julia-eval "sqrt(7)"))))
+  (let ((ret (julia-eval "sqrt(7)")))
+    (should (= ret (sqrt 7)))
+    (should (floatp ret))))
 
 (ert-deftest julia-eval-int-test ()
-  (should (= (julia-eval "1 + 1") 2))
-  (should (integerp (julia-eval "1 + 1"))))
+  (let ((ret (julia-eval "1 + 1")))
+    (should (= ret 2))
+    (should (integerp ret))))
+
+(ert-deftest julia-eval-string-test ()
+  (let* ((str "Hello from embedded Julia!")
+         (ret (julia-eval (format "\"%s\"" str))))
+    (should (equal ret str))
+    (should (stringp ret))))
