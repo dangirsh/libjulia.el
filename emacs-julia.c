@@ -13,7 +13,7 @@ static emacs_value Fjulia_tester (emacs_env *env)
   double ret_unboxed = 0.0;
 
   if (jl_typeis(ret, jl_float64_type)) {
-    double ret_unboxed = jl_unbox_float64(ret);
+    ret_unboxed = jl_unbox_float64(ret);
     printf("sqrt(2.0) in C: %e \n", ret_unboxed);
   }
   else {
@@ -29,7 +29,7 @@ int emacs_module_init(struct emacs_runtime *ert)
 
   jl_init();
 
-  DEFUN("julia-tester", Fjulia_tester, 1, 1,
+  DEFUN("julia-tester", Fjulia_tester, 0, 0,
         "testitest\n",
         0);
   provide(env, "julia-tester");

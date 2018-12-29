@@ -1,5 +1,7 @@
 (add-to-list 'load-path (expand-file-name "."))
 
+(require 'julia)
+(require 'ert)
 
-(defun test-julia-load ()
-  (load-file "libemacs-julia.so"))
+(ert-deftest julia-test ()
+  (should (= (julia-tester) (sqrt 2))))

@@ -13,26 +13,19 @@ JL_FLAGS = $(CFLAGS) $(LDFLAGS) $(LDLIBS)
 
 .PHONY: all compile lib clean test
 
-all: lib compile
+all: lib
+# all: lib compile
 
-test: libemacs-julia.so tests.el
-	$(EMACS) --module-assertions -nw -Q -batch -L . -l ert -l emacs-julla-tests.el \
---eval "(ert-run-tests-batch-and-exit)"
-
-lib: libemacs-julia.so libemacs-module-helpers.so
+lib: emacs-julia.c emacs-module-helpers.c
+	gcc emacs-julia.c emacs-module-helpers.c --shared -Wall $(JL_FLAGS) -o emacs-julia.so
 
 clean:
 	rm *.o *.so $(FILES:.el=.elc)
 
-libemacs-module-helpers.so: emacs-module-helpers.c emacs-module-helpers.h
-	gcc -shared -Wall -I/usr/local/include \
-		-fPIC -o lib/libemacs-module-helpers.so -c emacs-module-helpers.c
+test: lib emacs-julia-tests.el Makefile
+	$(EMACS) --module-assertions -nw -Q -batch -L . -l ert -l emacs-julia-tests.el --eval "(ert-run-tests-batch-and-exit)"
 
-libemacs-julia.so: emacs-julia.c lib/libemacs-module-helpers.so
-	gcc emacs-julia.c --shared -Wall -L./lib -o lib/libemacs-julia.so \
-	$(JL_FLAGS) \
-	-lemacs-module-helpers
+# compile: $(ELCFILES)
 
-
-$(ELCFILES): %.elc: %.el
-	$(EMACS) --batch -Q -L . $(LIBS) -f batch-byte-compile $<
+# $(ELCFILES): %.elc: %.el
+# 	$(EMACS) --batch -Q -L . $(LIBS) -f batch-byte-compile $<
