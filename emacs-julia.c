@@ -12,13 +12,13 @@ static emacs_value Fjulia_tester (emacs_env *env)
 
   double ret_unboxed = 0.0;
 
-  /* if (jl_typeis(ret, jl_float64_type)) { */
-  /*   double ret_unboxed = jl_unbox_float64(ret); */
-  /*   printf("sqrt(2.0) in C: %e \n", ret_unboxed); */
-  /* } */
-  /* else { */
-  /*   printf("ERROR: unexpected return type from sqrt(::Float64)\n"); */
-  /* } */
+  if (jl_typeis(ret, jl_float64_type)) {
+    double ret_unboxed = jl_unbox_float64(ret);
+    printf("sqrt(2.0) in C: %e \n", ret_unboxed);
+  }
+  else {
+    printf("ERROR: unexpected return type from sqrt(::Float64)\n");
+  }
 
   return env->make_float (env, ret_unboxed);
 }
