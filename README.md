@@ -165,7 +165,7 @@ Maybe we can just try to serialize complex objects with `jld` (`hdf5` for Julia)
 
 Very little at the moment.
 
-We do attempt to capture
+We do capture exceptions thrown by Julia and return the exception type as a string to Emacs (+ emit some stdout). This is obviously brittle and needs work.
 
 
 ## Memory Management
