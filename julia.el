@@ -49,7 +49,7 @@
                  (remove-hook 'compilation-finish-functions #'load-julia)
                  (exit-recursive-edit)))
              (add-hook 'compilation-finish-functions #'load-julia)
-             (compile "make all")
+             (compile "make")
              (recursive-edit)))))
     (user-error "Modules are not supported")))
 
