@@ -174,6 +174,8 @@ Current tests are too simple for exploring this.
 
 The only relevant code for this right now is in [julia-core.c](julia-core.c):
 
+    jl_value_t *val = jl_eval_string(str_arg);
+    ...
     JL_GC_PUSH1(&val);
     emacs_value emacs_val = jl_to_elisp(env, val);
     JL_GC_POP();
