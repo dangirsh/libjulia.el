@@ -24,3 +24,17 @@
          (ret (julia-eval (format "\"%s\"" str))))
     (should (equal ret str))
     (should (stringp ret))))
+
+(ert-deftest julia-sexpr-str-test ()
+  (should (equal (julia-sexpr-str "1 + 1")
+                 "(:call :+ 1 1)"))
+  (should (equal (julia-sexpr-str "function(x) x * x end")
+                 "(:function (:tuple :x) (:block (:call :* :x :x)))")))
+
+(ert-deftest julia-sexpr-test ()
+  (should (equal (julia-sexpr "1 + 1")
+                 '(:call :+ 1 1)))
+
+  (should (equal (julia-sexpr "function(x) x * x end")
+                 '(:function (:tuple :x) (:block
+                                          (:call :* :x :x))))))
