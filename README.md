@@ -19,16 +19,16 @@ In addition, this project includes several Emacs and Julia functions for things 
 
 # Why?
 
-Julia is [lispy](https://www.youtube.com/watch?v=dK3zRXhrFZY) and has [powerful metaprogramming features](https://docs.julialang.org/en/v1/manual/metaprogramming/index.html). Emacs is arguably the best environment for working with lisps.
+Julia is [lispy](https://www.youtube.com/watch?v=dK3zRXhrFZY) and has [powerful metaprogramming features](https://docs.julialang.org/en/v1/manual/metaprogramming/index.html). Emacs is [arguably the best environment](https://www.youtube.com/watch?v=xzTH_ZqaFKI) for working with lisps.
 
 By giving Emacs access to Julia's C API, we can better leverage existing tools for lisp development and apply them to Julia.
 
 Here are some examples of tools that don't yet exist, but seem within reach:
 
--   A structure editor (like paredit, [lispy](https://github.com/abo-abo/lispy), etc&#x2026;)
+-   A structure editor (like [paredit](http://danmidwood.com/content/2014/11/21/animated-paredit.html), [smartparens](https://github.com/Fuco1/smartparens), [lispy](https://github.com/abo-abo/lispy), etc&#x2026;)
 -   A code auto-formatter
 -   An in-line macro-expander
--   Better hooks for tools like expand-region
+-   Better hooks for tools like [expand-region](https://github.com/magnars/expand-region.el)
 -   A [Rebugger](https://github.com/timholy/Rebugger.jl) mode.
 -   A "deparser" for converting s-expressions back to Julia code.
     -   Note: Julia's femtolisp parser has a `deparse` function that's not exposed. The [emacs-julia-parser](https://github.com/dzop/emacs-julia-parser/) exposes `julia-deparse`, but it seems unfinished.
@@ -38,8 +38,8 @@ The existing tools are spanned by
 -   Julia Mode - Syntax highlighting, &#x2026;
 -   [Juila REPL](https://github.com/tpapp/julia-repl) - Send code from a buffer to a Julia REPL controlled by Emacs.
 -   [LanguageServer.jl](https://github.com/JuliaEditorSupport/LanguageServer.jl) - Jump to definition, etc&#x2026; Not yet working for Julia 1.0+.
--   [ob-ipython](https://github.com/gregsexton/ob-ipython) / [emacs-jupyter](https://github.com/dzop/emacs-jupyter) for Jupyter integration (evaluation, completion, inspection)
--   [emacs-julia-parser](https://github.com/dzop/emacs-julia-parser/) - An (in-progress) ambitious attempt to port Julia's femtolisp parser to Emacs Lisp.
+-   [ob-ipython](https://github.com/gregsexton/ob-ipython) / [emacs-jupyter](https://github.com/dzop/emacs-jupyter) - Jupyter integration (evaluation, completion, inspection)
+-   [emacs-julia-parser](https://github.com/dzop/emacs-julia-parser/) - An ambitious (in-progress) attempt to port Julia's femtolisp parser to Emacs Lisp.
 
 
 # Getting Started
@@ -47,7 +47,7 @@ The existing tools are spanned by
 
 ## Requirements
 
--   Emacs Lisp experience. There is currently very little use of this package other than to aid in developing Emacs Lisp facilities for Julia.
+-   Emacs Lisp experience. There is currently very little use of this package other than to aid in developing Emacs Lisp tools for Julia.
 -   Emacs 25+ that you can build from source.
 -   A `libjulia.so` from Julia 1.0+.
     -   I have this in `/usr/local/lib` after building Julia from source with `prefix=/usr/local`.
@@ -60,15 +60,13 @@ I suspect this works on most modern GNU/Linux systems, and that OSX can be made 
 
 ## Compile Emacs
 
-We need to compile Emacs with module support and with the RTLD\_GLOBAL flag added to dlopen.
+We need to compile Emacs with module support using the `--with-modules` configure option. Additionally, we need to add the `RTLD_GLOBAL` flag to the Emacs `dlopen` call, per the [Julia embedding docs](https://docs.julialang.org/en/v1/manual/embedding/index.html#High-Level-Embedding-1).
 
-WARNING: I can't confirm the dlopen modification will not break loading other shared libraries! I haven't seen issues in my configuration.
+**WARNING: I can't confirm the `dlopen` modification will not break loading other shared libraries!** I haven't seen issues in my configuration.
 
-The requirement for this flag is mentioned here <https://docs.julialang.org/en/v1/manual/embedding/index.html#High-Level-Embedding-1>
+Unfortunately, adding the `dlopen` flag requires modifying the Emacs source and recompiling. This is the ugliest part of the setup right now, and will hopefully go away soon. Please let me know if you have ideas on this.
 
-Unfortunately, this requires modifying the Emacs source and recompiling. This is the ugliest part of the setup right now, and will hopefully go away. Let me know if you have ideas regarding this.
-
-Assuming you've cloned Emacs to `~/emacs-src`, edit `~/emacs-src/src/dynlib.c` so that `RTLD_GLOBAL` is OR'd to the `dlopen` flags:
+Assuming you've cloned Emacs to `~/emacs-src`, edit `~/emacs-src/src/dynlib.c:dynlib_open` so that `RTLD_GLOBAL` is OR'd to the `dlopen` flags:
 
     dynlib_handle_ptr
     dynlib_open (const char *path)
@@ -85,37 +83,32 @@ Then, in `~/emacs-src`, run:
 If the build succeeds, your new Emacs executable will be `~/emacs-src/src/emacs`. You can `make install` it as root if you'd like, but I prefer to keep a clean Emacs in my `/usr/local/bin` as a backup.
 
 
-## Setting shared library directories
+## Configure shared library directories
 
-You need to ensure the directory containing the Julia shared library `libjulia.so` (built by default when compiling Julia) is in the list of paths `ld` searches when dynamically linking. This must be set in the environment you launch Emacs from.
+You need to ensure the directory containing the Julia shared library `libjulia.so` (built by default when compiling Julia) is in the list of paths `ld` searches when dynamically linking.
 
-I currently do this by setting `export LD_LIBRARY_PATH=<libjulia_dir>` in the [bin/emacs](bin/emacs) wrapper script, where `<libjulia_dir>` is wherever `libjulia.so` is installed on your system. On Linux you can quickly find it by running `find / -name "\*libjulia.so\*".` If you built Julia from source, it's in `<julia-src-root>/usr/lib`.
+If you installed Julia to `/usr/local/`, you're likely fine.
 
-TODO: I know there's a better way with `ldconfig`, but I haven't looked into it yet. Feel free to update this section of the docs if you know!
+Otherwise, you can use `ldconfig` or `export LD_LIBRARY_PATH=<julia_lib_dir>` to tell the linker the location of `libjulia.so`.
+
+NB: Emacs won't re-load a dynamic module, so you'll have to restart it to test changes like this. `make test` will spawn a fresh Emacs process for you, which is helpful in cases like this.
+
+NB2: On Linux you can quickly find the library location by running `find / -name "\*libjulia.so\*".`
 
 Read more about shared libraries [here](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=11&cad=rja&uact=8&ved=2ahUKEwjc__bkrMbfAhVG1hoKHZJyAmEQFjAKegQIChAB&url=http%253A%252F%252Ftldp.org%252FHOWTO%252FProgram-Library-HOWTO%252Fshared-libraries.html&usg=AOvVaw3xPHqyZEvQn6LR-oQzV4g1).
 
 
 ## Install the Emacs package
 
-With your freshly-built Emacs launched with the above instructions, you should now clone this repository somewhere in your Emacs load path. Then evaluate `(require 'julia)` and go through the first-load compilation phase (with lots of `gcc` warnings spewed, sorry I'm not as good as -Wall wants me to be). If successful, `julia-core.so` should be compiled and loaded into your Emacs process. Your `*Messages*` buffer should contain the line:
+Run your freshly-built Emacs launched with the above instructions, then clone this repository somewhere in your Emacs load path. Evaluate `(require 'julia)` and go through the first-load compilation steps (don't mind the `gcc` warnings). If successful, `julia-core.so` should be compiled and loaded into your Emacs process. Your `*Messages*` buffer should contain the line:
 
-    Loading .../julia/julia-core.so (module)...done
+    Loading <install-dir>/julia-core.so (module)...done
 
-Verify further by trying to call one of the functions exposed by `julia-core.so` from Emacs Lisp. For example:
+Verify the bindings work by trying to call one of the functions exposed by `julia-core.so` from Emacs Lisp. For example:
 
     (julia-eval "\"Julia knows pi: $pi\"")
 
     Julia knows pi: π = 3.1415926535897...
-
-
-# Running the tests
-
-Tests run in a separate Emacs process in "batch" mode (so no new Emacs frame will appear).
-
-From the top-level directory of this repository, run:
-
-    make test
 
 
 # Re-building the shared library
@@ -125,6 +118,17 @@ You should only need to do this if you modify the C sources.
 From the top-level directory of this repository, run:
 
     make
+
+In case you need it, `make clean` wipes away the object files and shared library.
+
+
+# Running the tests
+
+Tests run in a separate Emacs process in "batch" mode (so no new Emacs frame will appear).
+
+From the top-level directory of this repository, run:
+
+    make test
 
 
 # Status / Development Notes
