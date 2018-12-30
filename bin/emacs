@@ -1,5 +1,5 @@
 #!/bin/bash
 set -ex
 
-export LD_LIBRARY_PATH=/home/dan/julia/usr/lib:/home/dan/emacs-julia/lib
+export LD_LIBRARY_PATH=$HOME/julia/usr/lib
 $HOME/emacs-src/src/emacs $@
