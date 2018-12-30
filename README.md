@@ -200,7 +200,7 @@ FWIW, [emacs-zmq](https://github.com/dzop/emacs-zmq)sss spawns a slave Emacs pro
 
 ## Build
 
--   Why is `make all` required, instead of just `make`?
+-   <del>Why is `make all` required, instead of just `make`?</del>
 -   Can we also build `flisp` as a shared library?
 
 
