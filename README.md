@@ -187,7 +187,7 @@ which ensures `val` isn't garbage collected by Julia while we convert it to an E
 
 Currently, if Julia blocks, Emacs hangs. Julia is being compiled with threads enabled, so this might be avoidable.
 
-FWIW, `emacs-zmq` spawns a slave Emacs process to handle polling channels. I hope that's not necessary here.
+FWIW, [emacs-zmq](https://github.com/dzop/emacs-zmq)sss spawns a slave Emacs process to handle polling channels. I hope that's not necessary here.
 
 
 ## Tests
@@ -214,7 +214,7 @@ While we're still relying on a patched Emacs, it would be nice to:
 
 # Acknowledgments
 
--   <https://github.com/dzop/emacs-zmq> for inspiration and great examples. The first-load automatic compilation code was taken from here (and probably other things).
+-   [emacs-zmq](https://github.com/dzop/emacs-zmq) for inspiration and great examples. The first-load automatic compilation code was taken from here (and probably other things).
 -   John Kitchin for his [module helpers](https://github.com/jkitchin/emacs-modules).
 -   This thorough Emacs module documentation: <http://phst.github.io/emacs-modules.html>
 -   The `linefilter!` function to cleanup Julia `Expr` objects was taken from <https://github.com/chakravala/SyntaxTree.jl>
