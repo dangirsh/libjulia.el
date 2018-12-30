@@ -11,15 +11,35 @@ The exposed wrappers in dynamic module are responsible for:
 -   handling errors that occur in the Julia runtime
 -   managing object lifetimes
 
-In addition, there are several included Emacs and Julia functions for things like:
+In addition, this project includes several Emacs and Julia functions for things like:
 
--   converting some Julia code to a Elisp s-expression
+-   converting Julia code to an s-expression readable by Emacs Lisp
 -   &#x2026;
 
 
 # Why?
 
-Julia is [lispy](https://www.youtube.com/watch?v=dK3zRXhrFZY) and has [powerful metaprogramming features](https://docs.julialang.org/en/v1/manual/metaprogramming/index.html). Emacs is arguably the most powerful environment for working with lisps. By giving Emacs access to Julia's C API with a shared-memory model, I hope this project will enable
+Julia is [lispy](https://www.youtube.com/watch?v=dK3zRXhrFZY) and has [powerful metaprogramming features](https://docs.julialang.org/en/v1/manual/metaprogramming/index.html). Emacs is arguably the best environment for working with lisps.
+
+By giving Emacs access to Julia's C API, we can better leverage existing tools for lisp development and apply them to Julia.
+
+Here are some examples of tools that don't yet exist, but seem within reach:
+
+-   A structure editor (like paredit, [lispy](https://github.com/abo-abo/lispy), etc&#x2026;)
+-   A code auto-formatter
+-   An in-line macro-expander
+-   Better hooks for tools like expand-region
+-   A [Rebugger](https://github.com/timholy/Rebugger.jl) mode.
+-   A "deparser" for converting s-expressions back to Julia code.
+    -   Note: Julia's femtolisp parser has a `deparse` function that's not exposed. The [emacs-julia-parser](https://github.com/dzop/emacs-julia-parser/) exposes `julia-deparse`, but it seems unfinished.
+
+The existing tools are spanned by
+
+-   Julia Mode - Syntax highlighting, &#x2026;
+-   [Juila REPL](https://github.com/tpapp/julia-repl) - Send code from a buffer to a Julia REPL controlled by Emacs.
+-   [LanguageServer.jl](https://github.com/JuliaEditorSupport/LanguageServer.jl) - Jump to definition, etc&#x2026; Not yet working for Julia 1.0+.
+-   [ob-ipython](https://github.com/gregsexton/ob-ipython) / [emacs-jupyter](https://github.com/dzop/emacs-jupyter) for Jupyter integration (evaluation, completion, inspection)
+-   [emacs-julia-parser](https://github.com/dzop/emacs-julia-parser/) - An (in-progress) ambitious attempt to port Julia's femtolisp parser to Emacs Lisp.
 
 
 # Getting Started
@@ -27,9 +47,11 @@ Julia is [lispy](https://www.youtube.com/watch?v=dK3zRXhrFZY) and has [powerful 
 
 ## Requirements
 
--   Emacs 25+ that you can compile from source.
--   Julia 1.0+
--   Perserverance. This is not (yet) a 1-click install.
+-   Emacs Lisp experience. There is currently very little use of this package other than to aid in developing Emacs Lisp facilities for Julia.
+-   Emacs 25+ that you can build from source.
+-   A `libjulia.so` from Julia 1.0+.
+    -   I have this in `/usr/local/lib` after building Julia from source with `prefix=/usr/local`.
+-   Perseverance. This is not (yet) a 1-click install.
 
 **NOTE: This has only been tested on Ubuntu 16.04.5 with Emacs 27.0.5 and Julia 1.0.2**.
 
@@ -76,11 +98,11 @@ Read more about shared libraries [here](https://www.google.com/url?sa=t&rct=j&q=
 
 ## Install the Emacs package
 
-With your freshly-built Emacs launched with the above instructions, you should now clone this repository somewhere in your emacs load path. Then evaluate `(require 'julia)` and go through the first-load compilation phase (with lots of gcc warnings spewed, sorry I'm not as good as -Wall wants me to be). If successful, `julia-core.so` should be compiled and loaded into your Emacs process. Your `*Messages*` buffer should contain the line:
+With your freshly-built Emacs launched with the above instructions, you should now clone this repository somewhere in your Emacs load path. Then evaluate `(require 'julia)` and go through the first-load compilation phase (with lots of `gcc` warnings spewed, sorry I'm not as good as -Wall wants me to be). If successful, `julia-core.so` should be compiled and loaded into your Emacs process. Your `*Messages*` buffer should contain the line:
 
     Loading .../julia/julia-core.so (module)...done
 
-Verify further by trying to call one of the functions exposed by `julia-core.so` from Elisp. For example:
+Verify further by trying to call one of the functions exposed by `julia-core.so` from Emacs Lisp. For example:
 
     (julia-eval "\"Julia knows pi: $pi\"")
 
@@ -91,7 +113,7 @@ Verify further by trying to call one of the functions exposed by `julia-core.so`
 
 Tests run in a separate Emacs process in "batch" mode (so no new Emacs frame will appear).
 
-From the top-level directory of this repo, run:
+From the top-level directory of this repository, run:
 
     make test
 
@@ -100,12 +122,12 @@ From the top-level directory of this repo, run:
 
 You should only need to do this if you modify the C sources.
 
-From the top-level directory of this repo, run:
+From the top-level directory of this repository, run:
 
     make
 
 
-# Status / Dev Notes
+# Status / Development Notes
 
 
 ## Data Marshalling
@@ -113,9 +135,9 @@ From the top-level directory of this repo, run:
 
 ### Emacs -> Julia
 
-Unstarted.
+Not started.
 
-For now we serialize any data from Emacs into a string representations of Julia code, then just eval it.
+For now we serialize any data from Emacs into a string representations of Julia code, then just `eval` it.
 
 e.g.
 
@@ -128,13 +150,13 @@ e.g.
 
 ### Julia -> Emacs <code>[2/5]</code>
 
--   [X] ints, floats
+-   [X] integers, floats
 -   [X] strings
 -   [ ] 1d arrays
 -   [ ] multi-dimensional arrays
--   [ ] arbitrary serializable objects
+-   [ ] arbitrary serialize-able objects
 
-Maybe we can just try to serialize complex objects with jld (hdf5 for Julia), then try to deserialize on the Emacs side.
+Maybe we can just try to serialize complex objects with `jld` (`hdf5` for Julia), then try to de-serialize on the Emacs side.
 
 
 ## Error handling
@@ -154,14 +176,14 @@ The only relevant code for this right now is in [julia-core.c](julia-core.c):
     emacs_value emacs_val = jl_to_elisp(env, val);
     JL_GC_POP();
 
-which ensures `val` isn't garbage collected by Julia while we convert it to an Elisp value.
+which ensures `val` isn't garbage collected by Julia while we convert it to an Emacs Lisp value.
 
 
 ## Concurrency
 
 Currently, if Julia blocks, Emacs hangs. Julia is being compiled with threads enabled, so this might be avoidable.
 
-FWIW, emacs-zmq spawns a slave Emacs process to handle polling channels. I hope that's not necessary here.
+FWIW, `emacs-zmq` spawns a slave Emacs process to handle polling channels. I hope that's not necessary here.
 
 
 ## Tests
@@ -175,14 +197,14 @@ FWIW, emacs-zmq spawns a slave Emacs process to handle polling channels. I hope 
 ## Build
 
 -   Why is `make all` required, instead of just `make`?
--   Can we also build flisp as a shared library?
+-   Can we also build `flisp` as a shared library?
 
 
 ## Development
 
 While we're still relying on a patched Emacs, it would be nice to:
 
--   provide a patch file for the dlopen tweak (one line)
+-   provide a patch file for the `dlopen` tweak (one line)
 -   provide a container image with the patched pre-built Emacs (for testing)
 
 
@@ -191,4 +213,4 @@ While we're still relying on a patched Emacs, it would be nice to:
 -   <https://github.com/dzop/emacs-zmq> for inspiration and great examples. The first-load automatic compilation code was taken from here (and probably other things).
 -   John Kitchin for his [module helpers](https://github.com/jkitchin/emacs-modules).
 -   This thorough Emacs module documentation: <http://phst.github.io/emacs-modules.html>
--   THe `linefilter!` function to cleanup Julia `Expr` objects was taken from <https://github.com/chakravala/SyntaxTree.jl>
+-   The `linefilter!` function to cleanup Julia `Expr` objects was taken from <https://github.com/chakravala/SyntaxTree.jl>
