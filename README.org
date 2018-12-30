@@ -243,4 +243,3 @@ While we're still relying on a patched Emacs, it would be nice to:
 - [[https://github.com/dzop/emacs-zmq][emacs-zmq]] for inspiration and great examples. The first-load automatic compilation code was taken from here (and probably other things).
 - John Kitchin for his [[https://github.com/jkitchin/emacs-modules][module helpers]].
 - This thorough Emacs module documentation: http://phst.github.io/emacs-modules.html
-- The =linefilter!= function to cleanup Julia =Expr= objects was taken from https://github.com/chakravala/SyntaxTree.jl

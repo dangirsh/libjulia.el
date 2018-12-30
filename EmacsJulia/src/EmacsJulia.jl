@@ -1,27 +1,28 @@
 module EmacsJulia
 
+using MacroTools: postwalk
+
 export clean_sexpr
 
-@noinline function linefilter!(expr::Expr)
-    total = length(expr.args)
-    i = 0
-    while i < total
-        i += 1
-        if expr.args[i] |> typeof == Expr
-            if expr.args[i].head == :line
-                deleteat!(expr.args,i)
-                total -= 1
-                i -= 1
-            else
-                expr.args[i] = linefilter!(expr.args[i])
-            end
-        elseif expr.args[i] |> typeof == LineNumberNode
-            deleteat!(expr.args,i)
-            total -= 1
-            i -= 1
-        end
+"""
+Return a new Expr with all line annotations converted from:
+
+:(#= <file_name>:<line_num> =#)
+
+to
+
+:(:line_annotation, <file_name>, <line_num>)
+
+which is easier to work with from Emacs.
+"""
+@noinline function emacsify_line_annotations(expr::Expr)
+
+    function convert(lnn::LineNumberNode)
+        Expr(:line_annotation,
+             string(lnn.file), lnn.line)
     end
-    return expr
+
+    postwalk(x -> x isa LineNumberNode ? convert(x) : x, expr)
 end
 
 clean_sexpr_impl(ex) = sprint(io -> show(io, ex))
@@ -33,7 +34,7 @@ function clean_sexpr_impl(ex::Expr)
 end
 
 function clean_sexpr(ex::Expr)
-    ex = linefilter!(ex)
+    ex = emacsify_line_annotations(ex)
     clean_sexpr_impl(ex)
 end
 
@@ -42,6 +43,5 @@ function clean_sexpr(julia_code::String)
     ex = linefilter!(ex)
     clean_sexpr_impl(ex)
 end
-
 
 end
