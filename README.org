@@ -201,9 +201,12 @@ which ensures =val= isn't garbage collected by Julia while we convert it to an E
 
 Currently, if Julia blocks, Emacs hangs. Julia is being compiled with threads enabled, so this might be avoidable.
 
-FWIW, [[https://github.com/dzop/emacs-zmq][emacs-zmq]]sss spawns a slave Emacs process to handle polling channels. I hope that's not necessary here.
+FWIW, [[https://github.com/dzop/emacs-zmq][emacs-zmq]] spawns a slave Emacs process to handle polling channels. I hope that's not necessary here.
 
 ** Tests
+
+...
+
 ** Benchmarks
 
 - Round-trip speed test against Julia REPL and jupy-julia
@@ -227,6 +230,13 @@ While we're still relying on a patched Emacs, it would be nice to:
   - This will likely require a (fork of / PR to) femtolisp, as it doesn't seem to currently build objects for use in shared libraries.
   - If the [[https://github.com/dzop/emacs-julia-parser/][emacs-julia-parser]] succeeds, this could be unnecessary.
     - However, as there is no spec for Julia's syntax, so *the femtolisp parser is the de-facto spec*!
+
+** Open tasks
+
+- Finish data marshalling layer
+- Demo some new functionality leveraging sexprs
+- Shell for inspecting Julia's state
+- Async Julia eval
 
 * Acknowledgments
 
