@@ -8,7 +8,11 @@
 
 NOTE: This project is in-development not ready for production use! See the end of this document for notes on how to contribute.
 
-Julia is designed to be [[https://docs.julialang.org/en/v1/manual/embedding/index.html%20][embeddable]]. This project uses Julia's C API to create an [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Dynamic-Modules.html][Emacs dynamic module]], thereby embedding Julia into Emacs. When loaded  into a running Emacs process, the dynamic module registers new Emacs Lisp functions that (indirectly) call Julia's C API functions.
+Julia is designed to be [[https://docs.julialang.org/en/v1/manual/embedding/index.html%20][embeddable]]. This project uses Julia's C API to create an [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Dynamic-Modules.html][Emacs dynamic module]], thereby embedding Julia into Emacs. When loaded into a running Emacs process, the dynamic module registers new Emacs Lisp functions that (indirectly) call Julia's C API functions. This enables, among other things:
+
+- low-overhead communication between Emacs and Julia
+- writing Emacs extensions in Julia, which can themselves leverage any Julia library
+- access to some Julia function exposed in the C API, but not to Julia code (i.e. inaccessible from the REPL)
 
 The exposed wrappers in dynamic module are responsible for:
 
@@ -237,6 +241,23 @@ While we're still relying on a patched Emacs, it would be nice to:
 - Demo some new functionality leveraging sexprs
 - Shell for inspecting Julia's state
 - Async Julia eval
+- Determine if we can hold on to several Julia sessions
+- Determine if we can clear the state of an existing Julia session
+-
+
+
+* Misc
+
+** Naming Conventions
+
+The names for:
+
+  - this project
+  - the emacs library it exposes
+  - the top-level C source file
+  - the ".so" shared library
+
+all try to follow conventions already set by other Emacs dynamic modules. You can find a list [[https://github.com/emacs-pe/emacs-modules][here]]. Please let me know if you find an inconsistency.
 
 * Acknowledgments
 
