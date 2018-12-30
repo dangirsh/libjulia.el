@@ -1,7 +1,6 @@
 EMACS = ./bin/emacs
 
-JULIA_DIR = "/home/dan/julia"
-JL_SHARE = "$(JULIA_DIR)/usr/share/julia"
+JL_SHARE = $(shell julia -e 'print(joinpath(Sys.BINDIR, Base.DATAROOTDIR, "julia"))')
 JL_FLAGS = $(shell $(JL_SHARE)/julia-config.jl --cflags --ldflags --ldlibs)
 
 .PHONY: all compile lib clean test
