@@ -19,9 +19,7 @@ In addition, this project includes several Emacs and Julia functions for things 
 
 # Why?
 
-Julia is [lispy](https://www.youtube.com/watch?v=dK3zRXhrFZY) and has [powerful metaprogramming features](https://docs.julialang.org/en/v1/manual/metaprogramming/index.html). Emacs is [arguably the best environment](https://www.youtube.com/watch?v=xzTH_ZqaFKI) for working with lisps.
-
-By giving Emacs access to Julia's C API, we can better leverage existing tools for lisp development and apply them to Julia.
+Emacs is [arguably the best environment](https://www.youtube.com/watch?v=xzTH_ZqaFKI) for working with languages in the [Lisp family](http://wiki.c2.com/?LispFamily) (e.g. Common Lisp, Scheme, Emacs Lisp). Julia is a lisp in disguise (see [Julia metaprogramming](https://docs.julialang.org/en/v1/manual/metaprogramming/index.html), [this talk](https://confengine.com/functional-conf-2016/proposal/3153/julia-a-lisp-for-fast-number-crunching), and [this talk](https://www.youtube.com/watch?v=dK3zRXhrFZY)). By giving Emacs access to Julia's C API, we can better leverage the existing lisp tools and apply them to Julia.
 
 Here are some examples of tools that don't yet exist, but seem within reach:
 
@@ -33,7 +31,7 @@ Here are some examples of tools that don't yet exist, but seem within reach:
 -   A "deparser" for converting s-expressions back to Julia code.
     -   Note: Julia's femtolisp parser has a `deparse` function that's not exposed. The [emacs-julia-parser](https://github.com/dzop/emacs-julia-parser/) exposes `julia-deparse`, but it seems unfinished.
 
-The existing tools are spanned by
+As a reference, the existing tools are spanned by
 
 -   Julia Mode - Syntax highlighting, &#x2026;
 -   [Juila REPL](https://github.com/tpapp/julia-repl) - Send code from a buffer to a Julia REPL controlled by Emacs.
