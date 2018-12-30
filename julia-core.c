@@ -87,6 +87,26 @@ Fjulia_eval (emacs_env *env, ptrdiff_t nargs, emacs_value args[], void *data)
   }
 }
 
+
+static emacs_value
+Fjulia_eval_blind(emacs_env *env, ptrdiff_t nargs, emacs_value args[], void *data)
+{
+  ptrdiff_t size;
+  char *str_arg = retrieve_string(env, args[0], &size);
+  jl_eval_string(str_arg);
+  char *return_message = "Fatal error in Fjulia_eval_blind";
+  if (jl_exception_occurred()){
+    char *exception_str = jl_typeof_str(jl_exception_occurred());
+    printf("Exception from jl_eval_string: %s \n", exception_str);
+    printf("Returning exception string to Emacs.");
+    return_message = exception_str;
+  }
+  else {
+    return_message = "Successfully evaluated in Julia.";
+  }
+  return env->make_string(env, return_message, strlen(return_message));
+}
+
 // Used by julia-simple-test
 static emacs_value Fjulia_sqrt2 (emacs_env *env)
 {
@@ -123,8 +143,9 @@ int emacs_module_init(struct emacs_runtime *ert)
 
   jl_init();
 
-  DEFUN("julia-sqrt2", Fjulia_sqrt2, 0, 0, "testitest\n", 0);
-  DEFUN("julia-eval", Fjulia_eval, 1, 1, "eval in julia\n", 0);
+  DEFUN("julia-sqrt2", Fjulia_sqrt2, 0, 0, "used by julia-simple-test\n", 0);
+  DEFUN("julia-eval", Fjulia_eval, 1, 1, "eval in julia and return value.\n", 0);
+  DEFUN("julia-eval-blind", Fjulia_eval_blind, 1, 1, "eval in julia, but don't return value.\n", 0);
   provide(env, "julia-tester");
 
   return 0;
