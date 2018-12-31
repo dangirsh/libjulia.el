@@ -29,9 +29,6 @@ retrieve_string(emacs_env *env, emacs_value str, ptrdiff_t *size)
 	return p;
 }
 
-int8_t jl_unbox_bool(jl_value_t *v) JL_NOTSAFEPOINT;
-
-
 #define JL_PRIMITIVE_TO_ELISP(env, jl_value, jl_type, c_to_elisp) \
   if (jl_typeis(jl_value, jl_##jl_type##_type)) {          \
     return c_to_elisp(env, jl_unbox_##jl_type(jl_value));  \
