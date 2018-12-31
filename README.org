@@ -10,53 +10,30 @@ NOTE: This project is in-development not ready for production use! See the end o
 
 Julia is designed to be [[https://docs.julialang.org/en/v1/manual/embedding/index.html%20][embeddable]]. This project uses Julia's C API to create an [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Dynamic-Modules.html][Emacs dynamic module]], thereby embedding Julia into Emacs. When loaded into a running Emacs process, the dynamic module registers new Emacs Lisp functions that (indirectly) call Julia's C API functions. To see this in action, skip to the [[*Basic verification][Basic verification]] section.
 
-Embedding Julia in Emacs enables, among other things:
-
-- low-overhead communication between Emacs and Julia
-- writing Emacs extensions in Julia, which can themselves leverage any Julia library
-- direct access to functions exposed in Julia's C API, but not to Julia code (i.e. inaccessible from the REPL)
-
-
-
-
-The exposed wrappers in dynamic module are responsible for:
-
-- converting data to/from Emacs Lisp types and Julia types
-- handling errors that occur in the Julia runtime
-- managing object lifetimes
-
-In addition, this project includes several Emacs and Julia functions for things like:
-
-- converting Julia code to an s-expression readable by Emacs Lisp
-- ...
-
 * Why?
 
-One of Julia's primary shortcomings is the lack of good editing and debugging tools. Emacs is a powerful environment for developing and using such tools, especially for languages in the the Lisp family. By giving Emacs access to Julia's C API is a foundation for building better tools for working with Julia in Emacs.
+** Augmenting Julia Development Tools in Emacs
 
-Julia is a Lisp-1 in disguise (see [[https://docs.julialang.org/en/v1/manual/metaprogramming/index.html][Julia metaprogramming]]), but currently lacks a good
+One of Julia's primary shortcomings is its lack development tools. Emacs is a powerful environment for building and using development tools, especially for languages in the the Lisp family. This project gives Emacs Lisp direct and efficient access to Juila's runtime in hopes of aiding the development of features like:
 
- leverage the existing lisp tools and apply them to Julia.
+- Structure editing (like [[http://danmidwood.com/content/2014/11/21/animated-paredit.html][paredit]], [[https://github.com/Fuco1/smartparens][smartparens]], and [[https://github.com/abo-abo/lispy][lispy]])
+- Step-by-step debugging
+- Inline expression evaluation
+- Inline macro-expansion
+- Inline views of lowered / compiled forms
+- Hooks for tools like [[https://github.com/magnars/expand-region.el][expand-region]]
+- Code auto-formatting
 
-Here are some examples of tools that don't yet exist, but seem within reach:
+Note that Emacs already has an interface to Julia via the [[https://github.com/tpapp/julia-repl][Julia REPL]], a [[https://github.com/JuliaEditorSupport/LanguageServer.jl][Language Server]], and [[https://github.com/dzop/emacs-jupyter][Jupyter kernels]]. However, none of them currently provide any of these features.
 
-- A structure editor (like [[http://danmidwood.com/content/2014/11/21/animated-paredit.html][paredit]], [[https://github.com/Fuco1/smartparens][smartparens]], [[https://github.com/abo-abo/lispy][lispy]], etc...)
-- A code auto-formatter
-- An in-line macro-expander
-- Better hooks for tools like [[https://github.com/magnars/expand-region.el][expand-region]]
-- A [[https://github.com/timholy/Rebugger.jl][Rebugger]] mode.
-- A "deparser" for converting s-expressions back to Julia code.
-  - Note: Julia's femtolisp parser has a =deparse= function that's not exposed. The [[https://github.com/dzop/emacs-julia-parser/][emacs-julia-parser]] exposes =julia-deparse=, but it seems unfinished.
+Also note that most of these are considered standard features for working with Lisps in Emacs.
 
-As a reference, the existing tools are spanned by
+** Augmenting Emacs with Julia
 
-- [[https://github.com/JuliaEditorSupport/julia-emacs][Julia Mode]] - Syntax highlighting, ...
-- [[https://github.com/tpapp/julia-repl][Juila REPL]] - Send code from a buffer to a Julia REPL controlled by Emacs.
-- [[https://github.com/JuliaEditorSupport/LanguageServer.jl][LanguageServer.jl]] - Jump to definition, etc... Not yet working for Julia 1.0+.
-- [[https://github.com/gregsexton/ob-ipython][ob-ipython]] / [[https://github.com/dzop/emacs-jupyter][emacs-jupyter]] - Jupyter integration (evaluation, completion, inspection)
-- [[https://github.com/dzop/emacs-julia-parser/][emacs-julia-parser]] - An ambitious (in-progress) attempt to port Julia's femtolisp parser to Emacs Lisp.
+Some Emacs extension could benefit from being partially written in Julia. This project directly enables this possibility.
 
 * Getting Started
+
 ** Requirements
 
 - Emacs Lisp experience. There is currently very little use of this package other than to aid in developing Emacs Lisp tools for Julia.
