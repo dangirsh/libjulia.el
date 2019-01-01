@@ -8,6 +8,8 @@
 
 NOTE: This project is in-development not ready for production use! See the end of this document for notes on how to contribute.
 
+NOTE: There is a currently an effort to move this to use [[https://github.com/tromey/emacs-ffi][emacs-ffi]]. See [[file:julia-ffi.el][julia-ffi.el]]. These docs still reflect the original attempt, which directly used the dynamic module interface.
+
 Julia is designed to be [[https://docs.julialang.org/en/v1/manual/embedding/index.html%20][embeddable]]. This project uses Julia's C API to create an [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Dynamic-Modules.html][Emacs dynamic module]], thereby embedding Julia into Emacs. When loaded into a running Emacs process, the dynamic module registers new Emacs Lisp functions that (indirectly) call Julia's C API functions. To see this in action, skip to the [[*Basic verification][Basic verification]] section.
 
 * Why?
@@ -33,7 +35,6 @@ Also note that most of these are considered standard features for working with L
 Some Emacs extension could benefit from being partially written in Julia. This project directly enables this possibility.
 
 * Getting Started
-
 ** Requirements
 
 - Emacs Lisp experience. There is currently very little use of this package other than to aid in developing Emacs Lisp tools for Julia.
@@ -131,7 +132,6 @@ Notice:
 - There is no Emacs Lisp definition for =julia-eval=. It is implemented in C in =julia-core.c= and wraps =jl_eval_string= from Julia's C API.
 - No Julia process is spawned for this evaluation. Instead, Julia and Emacs share a single process.
 - Julia retains state between calls from Emacs Lisp.
-
 
 * Development
 ** Re-building the shared library
@@ -252,6 +252,9 @@ While we're still relying on a patched Emacs, it would be nice to:
     - However, as there is no spec for Julia's syntax, so *the femtolisp parser is the de-facto spec*!
 
 ** Open tasks
+
+- Julia docs mention UInt128 and Int128 types, but there aren't box/unbox functions for them in =julia.h= near the others...
+
 
 - Finish data marshalling layer
 - Demo some new functionality leveraging sexprs
