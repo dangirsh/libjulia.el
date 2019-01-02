@@ -1,10 +1,7 @@
-(add-to-list 'load-path "/home/dan/.emacs.d/elpa/develop/s-20180406.808")
-
 (require 'ffi)
-(require 's)
 
 (defun libjulia-elisp-to-c-name (elisp-name)
-  (format "%s" (s-replace "-" "_" elisp-name)))
+  (replace-regexp-in-string (regexp-quote "-") "_" elisp-name t t))
 
 (defmacro libjulia-bind (name arg-types return-type)
   "Wrapper around define-ffi-function from the ffi library."
