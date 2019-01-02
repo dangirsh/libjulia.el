@@ -30,14 +30,29 @@
   (should (equal (libjulia-get-julia-type "3.14") "Float64")))
 
 ;; Implicitly tests unboxing
-(ert-deftest test-libjulia-eval ()
+(ert-deftest test-libjulia-eval-str ()
   ;; primitives
-  (should (equal (libjulia-eval "3") 3))
-  (should (float-equal (libjulia-eval "3.14f0") 3.14))
-  (should (float-equal (libjulia-eval "3.14") 3.14))
+  (should (equal (libjulia-eval-str "3") 3))
+  (should (float-equal (libjulia-eval-str "3.14f0") 3.14))
+  (should (float-equal (libjulia-eval-str "3.14") 3.14))
 
   ;; strings
-  (should (equal (libjulia-eval "\"Hallo\"") "Hallo")))
+  (should (equal (libjulia-eval-str "\"Hallo\"") "Hallo")))
+
+(ert-deftest test-libjulia-box-unbox ()
+
+  (defun box-unbox (elisp-val julia-type)
+    (let ((box (libjulia-get-jl-box-sym julia-type))
+          (unbox (libjulia-get-jl-unbox-sym julia-type)))
+      (funcall unbox (funcall box elisp-val))))
+
+
+  (defun test-roundrip-is-identity (elisp-val julia-type)
+    (should (equal (box-unbox elisp-val julia-type) elisp-val)))
+
+  (test-roundrip-is-identity 3 "Int64")
+  (test-roundrip-is-identity 3.4 "Float64")
+  (test-roundrip-is-identity 't "Bool"))
 
 ;; (ert-deftest test-libjulia-null-ptr ()
 ;;   (unwind-protect

@@ -53,7 +53,7 @@
        (progn ,@body))))
 
 
-(defun libjuila-generate-boxers-and-unboxers ()
+(defun libjuila-gen-boxers-and-unboxers ()
   (libjulia-dolist-primitive-types
    (eval `(libjulia-bind
            ,(libjulia-get-jl-unbox-sym julia-type)
@@ -62,8 +62,7 @@
    (eval `(libjulia-bind
            ,(libjulia-get-jl-box-sym julia-type)
            (,ffi-type)
-           :pointer))
-   ))
+           :pointer))))
 
 (defun libjulia-primitive-unbox (ptr julia-type)
   (unless (libjulia-primitive-julia-type-p julia-type)
@@ -91,10 +90,11 @@
      (libjulia-primitive-unbox ptr julia-type))
     ("String"
      (libjulia-elisp-str-from-julia ptr))
-    ;; If we can't convert to an Elisp type, return as a user-ptr.
+    ;; If we can't convert to an Elisp type, return as a raw user-ptr.
     (_ ptr)))
 
-(defun libjulia-eval (julia-expr-str)
+
+(defun libjulia-eval-str (julia-expr-str)
   (with-ffi-string (julia-expr-c-string julia-expr-str)
     (let* ((ret-val-ptr (jl-eval-string julia-expr-c-string))
            (julia-type (ffi-get-c-string (jl-typeof-str ret-val-ptr))))
@@ -114,7 +114,7 @@
   (define-ffi-library libjulia.so "libjulia.so")
   (define-ffi-function jl-init "jl_init__threading" :void nil libjulia.so)
   (jl-init)
-  (libjuila-generate-boxers-and-unboxers)
+  (libjuila-gen-boxers-and-unboxers)
   (libjulia-bind jl-string-ptr (:pointer) :pointer)
   (libjulia-bind jl-typeof-str (:pointer) :pointer)
   (libjulia-bind jl-eval-string (:pointer) :pointer))
