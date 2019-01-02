@@ -1,4 +1,3 @@
-(add-to-list 'load-path (concat default-directory "emacs-ffi"))
 (add-to-list 'load-path "/home/dan/.emacs.d/elpa/develop/s-20180406.808")
 
 (require 'ffi)
