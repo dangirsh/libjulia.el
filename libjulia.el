@@ -14,18 +14,21 @@
      libjulia.so))
 
 ;; TODO: there's likely a better datastructure for this...
+;; TODO: there are boxer for voidpointer, ssavevalue, slotnumber
+;; TODO: there's also an unboxer for voidpointer
 (defvar libjulia-primitive-type-map
-  '((:julia-type "Int8"    :c-type "int8"    :elisp-type :int)
-    (:julia-type "UInt8"   :c-type "uint8"   :elisp-type :int)
-    (:julia-type "Int16"   :c-type "int16"   :elisp-type :int)
-    (:julia-type "UInt16"  :c-type "uint16"  :elisp-type :int)
-    (:julia-type "Int32"   :c-type "int32"   :elisp-type :int)
-    (:julia-type "UInt32"  :c-type "uint32"  :elisp-type :int)
-    (:julia-type "Int64"   :c-type "int64"   :elisp-type :int)
-    (:julia-type "UInt64"  :c-type "uint64"  :elisp-type :int)
-    (:julia-type "Int64"   :c-type "int64"   :elisp-type :int)
-    (:julia-type "Float32" :c-type "float32" :elisp-type :float)
-    (:julia-type "Float64" :c-type "float64" :elisp-type :double)))
+  '((:julia-type "Bool"    :c-type "int8"    :ffi-type :bool)
+    (:julia-type "Int8"    :c-type "int8"    :ffi-type :int8)
+    (:julia-type "UInt8"   :c-type "uint8"   :ffi-type :uint8)
+    (:julia-type "Int16"   :c-type "int16"   :ffi-type :int16)
+    (:julia-type "UInt16"  :c-type "uint16"  :ffi-type :uint16)
+    (:julia-type "Int32"   :c-type "int32"   :ffi-type :int32)
+    (:julia-type "UInt32"  :c-type "uint32"  :ffi-type :uint32)
+    (:julia-type "Int64"   :c-type "int64"   :ffi-type :int64)
+    (:julia-type "UInt64"  :c-type "uint64"  :ffi-type :uint64)
+    (:julia-type "Int64"   :c-type "int64"   :ffi-type :int64)
+    (:julia-type "Float32" :c-type "float32" :ffi-type :float)
+    (:julia-type "Float64" :c-type "float64" :ffi-type :double)))
 
 (defun libjulia-primitive-convert (from-type-name from-type-key to-type-key)
   (plist-get
@@ -36,18 +39,18 @@
    to-type-key))
 
 (defun libjulia-primitive-julia-type-p (julia-type)
-  (libjulia-primitive-convert julia-type :julia-type :julia-type))
+  (not (null (libjulia-primitive-convert julia-type :julia-type :julia-type))))
 
 (defun libjulia-get-jl-unbox-sym (c-type)
   (intern (format "jl-unbox-%s" c-type)))
 
 (defun libjulia-gen-unboxers ()
   (dolist (type-entry libjulia-primitive-type-map)
-    (pcase-let ((`(_ _ :c-type ,c-type :elisp-type ,elisp-type) type-entry))
+    (pcase-let ((`(_ _ :c-type ,c-type :ffi-type ,ffi-type) type-entry))
       (eval `(libjulia-bind
               ,(libjulia-get-jl-unbox-sym c-type)
               (:pointer)
-              ,elisp-type)))))
+              ,ffi-type)))))
 
 (defun libjulia-primitive-unbox (ptr julia-type)
 (unless (libjulia-primitive-julia-type-p julia-type)

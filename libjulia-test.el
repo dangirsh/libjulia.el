@@ -10,6 +10,7 @@
            float-tol))))
 
 (ert-deftest test-libjulia-primitive-julia-type-p ()
+  (should (libjulia-primitive-julia-type-p "Bool"))
   (should (libjulia-primitive-julia-type-p "Int64"))
   (should (libjulia-primitive-julia-type-p "Float64"))
   (should-not (libjulia-primitive-julia-type-p "String"))
