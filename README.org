@@ -1,6 +1,6 @@
 #+TITLE: Emacs Julia
 
-#+PROPERTY: header-args :eval never-export :noweb yes :mkdirp yes :dir ~/treemax/.spacemacs.d/layers/treemax-julia/local/julia
+#+PROPERTY: header-args :eval never-export :noweb yes :mkdirp yes :dir ~/treemax/.spacemacs.d/layers/treemax-julia/local/libjulia
 #+PROPERTY: header-args:shell :results output verbatim drawer replace :tangle-mode (identity #o755)
 #+OPTIONS: num:nil toc:nil
 
@@ -49,47 +49,16 @@ I suspect this works on most modern GNU/Linux systems, and that OSX can be made 
 
 ** Compile Emacs
 
-We need to compile Emacs with module support using the =--with-modules= configure option. Additionally, we need to add the =RTLD_GLOBAL= flag to the Emacs =dlopen= call, per the [[https://docs.julialang.org/en/v1/manual/embedding/index.html#High-Level-Embedding-1][Julia embedding docs]].
-
-*WARNING: I can't confirm the dlopen modification will not affect the loading other shared libraries!* I haven't seen issues in my configuration.
-
-Unfortunately, adding the =dlopen= flag requires modifying the Emacs C source and recompiling. Please let me know if you know a better way to handle this.
-
-Assuming you've cloned Emacs to =~/emacs-src=, edit =~/emacs-src/src/dynlib.c:dynlib_open= so that =RTLD_GLOBAL= is OR'd to the =dlopen= flags. Here's an example diff:
-
-#+BEGIN_SRC shell :dir ~/emacs-src :exports both
-git diff
-#+END_SRC
-
-#+RESULTS:
-:RESULTS:
-diff --git a/src/dynlib.c b/src/dynlib.c
-index d40aa67f41..d8cdc61f69 100644
---- a/src/dynlib.c
-+++ b/src/dynlib.c
-@@ -269,7 +269,7 @@ dynlib_close (dynlib_handle_ptr h)
- dynlib_handle_ptr
- dynlib_open (const char *path)
- {
--  return dlopen (path, RTLD_LAZY);
-+  return dlopen (path, RTLD_LAZY | RTLD_GLOBAL);
- }
-
- void *
-:END:
-
-Now compile emacs by running the following in =~/emacs-src=:
+We need to compile Emacs with module support using the =--with-modules= configure option:
 
 #+BEGIN_SRC shell
-make clean   # optional, depending on your current state
 ./configure --with-modules
 make
 #+END_SRC
 
-If the build succeeds, your new Emacs executable will be =~/emacs-src/src/emacs=. You can =make install= it as root if you'd like, but I prefer to keep a clean Emacs in my =/usr/local/bin= as a backup.
+If the build succeeds, your new Emacs executable will be =src/emacs=. Run =make install= as root to install it to your system.
 
-NB: You can speed up compilation significantly by using the =-j<n>= [[https://www.gnu.org/software/make/manual/html_node/Options-Summary.html][flag]] to =make= for a parallel build, but that can make error messages harder to decipher.
-
+NB: You can speed up compilation significantly by using the =-j<n>= [[https://www.gnu.org/software/make/manual/html_node/Options-Summary.html][flag]] to =make= for a parallel build.
 
 ** Configure shared library directories
 
@@ -164,9 +133,12 @@ Tests run in a separate Emacs process in "batch" mode (so no new Emacs frame wil
 From the top-level directory of this repository, run:
 
 #+BEGIN_SRC shell
-make test
+make && make test-ffi
 #+END_SRC
 
+#+RESULTS:
+:RESULTS:
+:END:
 
 * Status / Development Notes
 ** Data Marshalling
