@@ -3,7 +3,7 @@
 EMACS_BUILDDIR = /home/dan/emacs-src/
 EMACS_FFIDIR = /home/dan/.emacs.d/elpa/local/emacs-ffi
 
-LIBS += -sharedn
+LIBS += -shared
 LDFLAGS = -shared
 CFLAGS += -g3 -Og -shared -fPIC -I$(EMACS_BUILDDIR)/src/ -I$(EMACS_BUILDDIR)/lib/
 
