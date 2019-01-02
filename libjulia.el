@@ -4,13 +4,6 @@
 (require 'ffi)
 (require 's)
 
-;;
-(load-file
- (expand-file-name
-  (concat "libjulia-wrapper" module-file-suffix)))
-
-(define-ffi-library libjulia.so "libjulia.so")
-
 (defun libjulia-elisp-to-c-name (elisp-name)
   (format "%s" (s-replace "-" "_" elisp-name)))
 
@@ -96,13 +89,24 @@
 
 (defun libjulia-eval (julia-expr-str)
   (with-ffi-string (julia-expr-c-string julia-expr-str)
-    (let* ((ret-val-ptr (jl-eval-string julia-expr-c-string))
-           (julia-type (ffi-get-c-string (jl-typeof-str ret-val-ptr))))
-      (libjulia-elisp-from-julia ret-val-ptr julia-type))))
+                   (let* ((ret-val-ptr (jl-eval-string julia-expr-c-string))
+                          (julia-type (ffi-get-c-string (jl-typeof-str ret-val-ptr))))
+                     (libjulia-elisp-from-julia ret-val-ptr julia-type))))
+
 
 (defun libjulia-init ()
-  ;; (libjulia-bind jl-init nil :void)
-  ;; (jl-init)
+  ;; Ugly workaround to being required to load libjulia with RTLD_GLOBAL.
+  ;; We load it first via the wrapper, which has a custom dlopen call
+  ;; Then, emacs-ffi tries to re-load it via dtld, but it's already
+  ;; been loaded with the RTLD_GLOBAL flag from the wrapper.
+  ;; Note that ltld docs claim their dlopen shouldn't need RTLD_GLOBAL because
+  ;; "back-tracing". This doesn't seem to be true for libjulia...
+  (module-load "/home/dan/treemax/.spacemacs.d/layers/treemax-julia/local/libjulia/libjulia-wrapper.so")
+  (libjulia--dlopen "/usr/local/lib/libjulia.so")
+
+  (define-ffi-library libjulia.so "libjulia.so")
+  (define-ffi-function jl-init "jl_init__threading" :void nil libjulia.so)
+  (jl-init)
   (libjulia-gen-unboxers)
   (libjulia-bind jl-string-ptr (:pointer) :pointer)
   (libjulia-bind jl-typeof-str (:pointer) :pointer)
