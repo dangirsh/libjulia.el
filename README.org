@@ -279,6 +279,75 @@ The names for:
   - the ".so" shared library
 
 all try to follow conventions already set by other Emacs dynamic modules. You can find a list [[https://github.com/emacs-pe/emacs-modules][here]]. Please let me know if you find an inconsistency.
+* Bugs to Report
+** Embedding Julia docs show the use of jl_get_function, but that doesn't seem to be exported:
+
+#+BEGIN_SRC c
+STATIC_INLINE jl_function_t *jl_get_function(jl_module_t *m, const char *name)
+{
+    return (jl_function_t*)jl_get_global(m, jl_symbol(name));
+}
+#+END_SRC
+
+#+BEGIN_SRC shell :exports both
+nm /usr/local/lib/libjulia.so |  grep jl_get_function
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+:END:
+
+Resorting to directly calling =jl_get_global= for now.
+** Incorrect [[file:~/julia/src/julia_threads.h:://%20JULIA_ENABLE_THREADING%20is%20switched%20on%20in%20Make.inc%20if%20JULIA_THREADS%20is][comment in julia_threads.h]] regarding =JULIA_ENABLE_THREADING=.
+
+Actually set to 1 always now in =Make.inc=
+
+#+BEGIN_EXAMPLE make
+# Enable threading with one thread
+JULIA_THREADS := 1
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE make
+# Threads
+ifneq ($(JULIA_THREADS), 0)
+JCPPFLAGS += -DJULIA_ENABLE_THREADING -DJULIA_NUM_THREADS=$(JULIA_THREADS)
+endif
+#+END_EXAMPLE
+
+Which means it's always on? Not sure how exporting jl_init ever works then:
+
+#+BEGIN_EXAMPLE c
+#ifdef JULIA_ENABLE_THREADING
+// this helps turn threading compilation mismatches into linker errors
+#define julia_init julia_init__threading
+#define jl_init jl_init__threading
+#define jl_init_with_image jl_init_with_image__threading
+#endif
+JL_DLLEXPORT void julia_init(JL_IMAGE_SEARCH rel);
+JL_DLLEXPORT void jl_init(void);
+JL_DLLEXPORT void jl_init_with_image(const char *julia_bindir,
+                                     const char *image_relative_path);
+#+END_EXAMPLE
+
+Seems like the name =jl_init= will always be swapped for =julia_init__threading=, which has no definition!
+
+Can confirm threading is enabled with:
+
+#+BEGIN_EXAMPLE c
+JL_DLLEXPORT int jl_threading_enabled(void)
+{
+#ifdef JULIA_ENABLE_THREADING
+    return 1;
+#else
+    return 0;
+#endif
+}
+#+END_EXAMPLE
+
+#+BEGIN_EXAMPLE julia
+ccall(:jl_threading_enabled, Cint, ())
+#+END_EXAMPLE
+
 
 * Acknowledgments
 
