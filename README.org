@@ -236,6 +236,38 @@ While we're still relying on a patched Emacs, it would be nice to:
 - Determine if we can clear the state of an existing Julia session
 -
 
+** Debugging Notes
+
+*** Compile libjulia with debugging symbols
+
+#+BEGIN_SRC shell :dir ~/julia
+make debug
+#+END_SRC
+
+*** Load debug version libjulia
+
+#+BEGIN_SRC emacs-lisp
+(module-load "/home/dan/treemax/.spacemacs.d/layers/treemax-julia/local/libjulia/libjulia-wrapper.so")
+(libjulia--dlopen "/home/dan/julia/usr/lib/libjulia-debug.so")
+#+END_SRC
+
+*** Run Emacs under gdb
+
+If using LD_LIBRARY_PATH, ensure you update it to point to include the path to =libjulia-debug.so=
+
+#+BEGIN_SRC shell
+LD_LIBRARY_PATH=... gdb --args ~/emacs-src/src/emacs
+#+END_SRC
+
+Then set a breakpoint somewhere in julia with a gdb command like:  =b /home/dan/julia/src/module.c:470=
+
+Then the =run= gdb command to launch Emacs.
+
+Load the debug library and do something that calls the code with the breakpoint.
+
+Use gdb to debug.
+
+
 * Misc
 ** Naming Conventions
 

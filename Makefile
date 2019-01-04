@@ -7,9 +7,6 @@ LIBS += -shared
 LDFLAGS = -shared
 CFLAGS += -g3 -Og -shared -fPIC -I$(EMACS_BUILDDIR)/src/ -I$(EMACS_BUILDDIR)/lib/
 
-# Set this to debug make check.
-# GDB = gdb --args
-
 all: libjulia-wrapper.so
 
 libjulia-wrapper.so: libjulia-wrapper.o
@@ -19,6 +16,9 @@ libjulia-wrapper.o: libjulia-wrapper.c
 
 clean:
 	rm *.o *.so
+
+# Uncomment this to debug via "make test".
+# GDB = gdb --args
 
 test: libjulia-wrapper.so libjulia-test.el Makefile
 	LD_LIBRARY_PATH=`pwd`:$(EMACS_FFIDIR):$$LD_LIBRARY_PATH; \
