@@ -54,6 +54,14 @@
   (test-roundrip-is-identity 3.4 "Float64")
   (test-roundrip-is-identity 't "Bool"))
 
+(ert-deftest test-ffi-array ()
+  (define-ffi-array test-array :int64 8)
+  (ffi-set-aref test-array :int64 0 42)
+  (should (equal (ffi-aref test-array :int64 0) 42))
+
+  (ffi-set-aref test-array :int64 7 23)
+  (should (equal (ffi-aref test-array :int64 7) 23)))
+
 ;; (ert-deftest test-libjulia-null-ptr ()
 ;;   (unwind-protect
 ;;       (setq res (libjulia-eval "Julia sees this string unquoted, which returns a null pointer from jl_eval_string."))

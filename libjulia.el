@@ -100,6 +100,17 @@
            (julia-type (ffi-get-c-string (jl-typeof-str ret-val-ptr))))
       (libjulia-elisp-from-julia ret-val-ptr julia-type))))
 
+(defun ffi-array-index-ref (array type index)
+  (ffi-pointer+ array (* index (ffi--type-size type))))
+
+(defun ffi-set-aref (array type index value)
+  (ffi--mem-set
+   (ffi-array-index-ref array type index)
+   type
+   value)
+  (unless (equal value (ffi-aref array type index))
+    (error (format "Failed to set ffi array %s at index %s." array index))))
+
 
 (defun libjulia-init ()
   ;; Ugly workaround to being required to load libjulia with RTLD_GLOBAL.
