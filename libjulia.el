@@ -153,10 +153,6 @@
      ret-type)))
 
 (defun libjuila-gen-function-bindings ()
-  ;; (define-ffi-function jl-init "jl_init" :void nil libjulia.so)
-  ;; (libjulia-bind jl-init
-  ;;                nil
-  ;;                :void)
   (libjulia-bind jl-string-ptr
                  (:pointer)
                  :pointer)
