@@ -41,6 +41,19 @@
        (progn ,@body))))
 
 
+;;; Type conversion
+
+;; TODO: arrays and pointers
+(defun libjulia-primitive-julia-type-from-elisp (elisp-val)
+  (pcase elisp-val
+    ((pred integerp) "Int64")
+    ((pred floatp) "Float64")
+    ((or 'nil t) "Bool")
+    (_ (error
+        (format
+         "%s can't be converted to a primitive Julia type."
+         (type-of elisp-val))))))
+
 ;;; Arrays
 
 (defun ffi-array-index-ref (array type index)

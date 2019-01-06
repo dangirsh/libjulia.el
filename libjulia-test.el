@@ -9,6 +9,12 @@
               (max (abs x) (abs y)))
            float-tol))))
 
+(ert-deftest test-libjulia-julia-type-from-elisp ()
+  (should (equal "Int64" (libjulia-primitive-julia-type-from-elisp 1)))
+  (should (equal "Float64" (libjulia-primitive-julia-type-from-elisp 1.0)))
+  (should (equal "Bool" (libjulia-primitive-julia-type-from-elisp nil)))
+  (should (equal "Bool" (libjulia-primitive-julia-type-from-elisp t))))
+
 (ert-deftest test-libjulia-primitive-julia-type-p ()
   (should (libjulia-primitive-julia-type-p "Bool"))
   (should (libjulia-primitive-julia-type-p "Int64"))
