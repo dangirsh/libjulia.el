@@ -162,12 +162,12 @@
 
 
 (defun libjulia-init ()
-  ;; Ugly workaround to being required to load libjulia with RTLD_GLOBAL.
-  ;; We load it first via the wrapper, which has a custom dlopen call
-  ;; Then, emacs-ffi tries to re-load it via dtld, but it's already
-  ;; been loaded with the RTLD_GLOBAL flag from the wrapper.
-  ;; Note that ltld docs claim their dlopen shouldn't need RTLD_GLOBAL because
-  ;; "back-tracing". This doesn't seem to be true for libjulia...
+  ;; Ugly workaround to being required to load libjulia with RTLD_GLOBAL. We load
+  ;; it first via the wrapper, which has a custom dlopen call. Then, emacs-ffi
+  ;; tries to re-load it via ltld, but it's already been loaded with the
+  ;; RTLD_GLOBAL flag from the wrapper. Note that ltld docs claim their dlopen
+  ;; shouldn't need RTLD_GLOBAL because "back-tracing". This doesn't seem to be
+  ;; true for libjulia...
   (module-load "/home/dan/treemax/.spacemacs.d/layers/treemax-julia/local/libjulia/libjulia-wrapper.so")
   (libjulia--dlopen "/usr/local/lib/libjulia.so")
 
