@@ -13,6 +13,18 @@
      ,arg-types
      libjulia.so))
 
+(defmacro libjulia-bind-symbol (sym ffi-type)
+  ;; ffi--dlsym returns a POINTER to the value of the sym in libjulia.so
+  ;; If the symbol is itself a pointer, say of type *t, then dlsym effectively
+  ;; returns a pointer of type **t. We use ffi--mem-ref here to dereference
+  ;; the returned pointer immediately.
+  ;; TODO: Is a simple setq the best option here?
+  `(setq ,sym
+         (ffi--mem-ref
+          (ffi--dlsym
+           ,(libjulia-under-to-hyphen (symbol-name sym)) (libjulia.so))
+          ,ffi-type)))
+
 ;; TODO: there's likely a better datastructure for this...
 ;; TODO: there are boxer for voidpointer, ssavevalue, slotnumber
 ;; TODO: there's also an unboxer for voidpointer
