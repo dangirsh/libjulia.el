@@ -1,10 +1,11 @@
 # Based on the Makefile by tromey in emacs-ffi
 
 EMACS_BUILDDIR = /home/dan/emacs-src/
-EMACS_FFIDIR = /home/dan/.emacs.d/elpa/local/emacs-ffi
+EMACS_FFIDIR = /home/dan/treemax/.spacemacs.d/layers/mine/local/ffi
 
 LIBS += -shared
 LDFLAGS = -shared
+# TODO test if we can remove the links to on emacs_builddir
 CFLAGS += -g3 -Og -shared -fPIC -I$(EMACS_BUILDDIR)/src/ -I$(EMACS_BUILDDIR)/lib/
 
 all: libjulia-wrapper.so
