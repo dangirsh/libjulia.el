@@ -85,13 +85,6 @@
     (funcall unbox-f ptr)))
 
 
-(defun libjulia-get-julia-type (ptr)
-  (ffi-get-c-string
-   (jl-typeof-str
-    (with-ffi-string (c-str-ptr ptr)
-      (jl-eval-string c-str-ptr)))))
-
-
 (defun libjulia-elisp-str-from-julia (ptr)
   (ffi-get-c-string (jl-string-ptr ptr)))
 
@@ -111,6 +104,12 @@
     (let* ((ret-val-ptr (jl-eval-string julia-expr-c-string))
            (julia-type (ffi-get-c-string (jl-typeof-str ret-val-ptr))))
       (libjulia-elisp-from-julia ret-val-ptr julia-type))))
+
+(defun libjulia-get-julia-type (julia-code-str)
+  (ffi-get-c-string
+   (jl-typeof-str
+    (with-ffi-string (c-str-ptr julia-code-str)
+      (jl-eval-string c-str-ptr)))))
 
 (defun ffi-array-index-ref (array type index)
   (ffi-pointer+ array (* index (ffi--type-size type))))
