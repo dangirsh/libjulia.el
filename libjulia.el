@@ -169,15 +169,26 @@
   ;; shouldn't need RTLD_GLOBAL because "back-tracing". This doesn't seem to be
   ;; true for libjulia...
   (module-load "/home/dan/treemax/.spacemacs.d/layers/treemax-julia/local/libjulia/libjulia-wrapper.so")
-  (libjulia--dlopen "/usr/local/lib/libjulia.so")
+  ;; (libjulia--dlopen "/usr/local/lib/libjulia.so")
+  (libjulia--dlopen "libjulia-debug.so")
 
-  (define-ffi-library libjulia.so "libjulia.so")
-  (define-ffi-function jl-init "jl_init__threading" :void nil libjulia.so)
+  ;; Now load the library again via emacs-ffi
+  ;; (define-ffi-library libjulia.so "libjulia.so")
+  (define-ffi-library libjulia.so "libjulia-debug.so")
+  (define-ffi-function jl-init "jl_init" :void nil libjulia.so)
+
   (jl-init)
+
   (libjuila-gen-boxers-and-unboxers)
+
   (libjulia-bind jl-string-ptr (:pointer) :pointer)
   (libjulia-bind jl-typeof-str (:pointer) :pointer)
-  (libjulia-bind jl-eval-string (:pointer) :pointer))
+  (libjulia-bind jl-eval-string (:pointer) :pointer)
+  (libjulia-bind jl-get-global (:pointer :pointer) :pointer)
+  (libjulia-bind jl-symbol (:pointer) :pointer)
+  (libjulia-bind jl-call (:pointer :pointer :int32) :pointer)
+
+  (libjulia-bind-symbol jl-base-module :pointer))
 
 (libjulia-init)
 

@@ -62,6 +62,12 @@
   (ffi-set-aref test-array :int64 7 23)
   (should (equal (ffi-aref test-array :int64 7) 23)))
 
+
+(ert-deftest test-libjuila-jl-call ()
+  (should (equal 8.0 (libjuila-jl-call "sqrt" '((64.0 . "Float64")) "Float64")))
+  (should (equal 2 (libjuila-jl-call "+" '((1 . "Int8") (1 . "Int8")) "Int8")))
+  (should (equal t (libjuila-jl-call "!" '((nil . "Bool")) "Bool"))))
+
 ;; (ert-deftest test-libjulia-null-ptr ()
 ;;   (unwind-protect
 ;;       (setq res (libjulia-eval "Julia sees this string unquoted, which returns a null pointer from jl_eval_string."))
