@@ -152,6 +152,33 @@
      (jl-call func-ptr jl-call-args nargs)
      ret-type)))
 
+(defun libjuila-gen-function-bindings ()
+  ;; (define-ffi-function jl-init "jl_init" :void nil libjulia.so)
+  ;; (libjulia-bind jl-init
+  ;;                nil
+  ;;                :void)
+  (libjulia-bind jl-string-ptr
+                 (:pointer)
+                 :pointer)
+  (libjulia-bind jl-typeof-str
+                 (:pointer)
+                 :pointer)
+  (libjulia-bind jl-eval-string
+                 (:pointer)
+                 :pointer)
+  (libjulia-bind jl-get-global
+                 (:pointer :pointer)
+                 :pointer)
+  (libjulia-bind jl-symbol
+                 (:pointer)
+                 :pointer)
+  (libjulia-bind jl-call
+                 (:pointer :pointer :int32)
+                 :pointer))
+
+(defun libjuila-gen-symbol-bindings ()
+  (libjulia-bind-symbol jl-base-module :pointer))
+
 (defun libjulia-init ()
   ;; Ugly workaround to being required to load libjulia with RTLD_GLOBAL. We load
   ;; it first via the wrapper, which has a custom dlopen call. Then, emacs-ffi
@@ -167,19 +194,10 @@
   ;; (define-ffi-library libjulia.so "libjulia.so")
   (define-ffi-library libjulia.so "libjulia-debug.so")
   (define-ffi-function jl-init "jl_init" :void nil libjulia.so)
-
   (jl-init)
-
   (libjuila-gen-boxers-and-unboxers)
-
-  (libjulia-bind jl-string-ptr (:pointer) :pointer)
-  (libjulia-bind jl-typeof-str (:pointer) :pointer)
-  (libjulia-bind jl-eval-string (:pointer) :pointer)
-  (libjulia-bind jl-get-global (:pointer :pointer) :pointer)
-  (libjulia-bind jl-symbol (:pointer) :pointer)
-  (libjulia-bind jl-call (:pointer :pointer :int32) :pointer)
-
-  (libjulia-bind-symbol jl-base-module :pointer))
+  (libjuila-gen-function-bindings)
+  (libjuila-gen-symbol-bindings))
 
 (libjulia-init)
 
