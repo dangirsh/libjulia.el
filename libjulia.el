@@ -135,6 +135,30 @@
   )
 
 
+(defun libjuila-jl-call (julia-func-name args ret-type)
+  ;; (with-ffi-string (julia-func-name-c-str julia-func-name))
+  ;; Here we reproduce the logic in julia.h for jl_get_function:
+  ;; STATIC_INLINE jl_function_t *jl_get_function(jl_module_t *m, const char *name)
+  ;; {
+  ;; return (jl_function_t*)jl_get_global(m, jl_symbol(name));
+  ;; }
+  ;; Note that jl_get_function itself is not exported.
+  (let* ((julia-func-name-c-string (ffi-make-c-string julia-func-name))
+         (julia-func-symbol (jl-symbol julia-func-name-c-string))
+         (func-ptr (jl-get-global jl-base-module julia-func-symbol))
+         (boxed-args
+          (mapcar
+           #'(lambda (arg)
+               (libjulia-primitive-box (car arg) (cdr arg)))
+           args))
+         (nargs (length args)))
+    (define-ffi-array jl-call-args :pointer nargs)
+    (dotimes (index nargs)
+      (ffi-set-aref jl-call-args :pointer index (elt boxed-args index)))
+    (libjulia-primitive-unbox
+     (jl-call func-ptr jl-call-args nargs)
+     ret-type)))
+
 
 
 (defun libjulia-init ()
