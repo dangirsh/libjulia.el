@@ -1,5 +1,10 @@
 (require 'ffi)
 
+;;; Utilities
+
+(defun libjulia-under-to-hyphen (elisp-name)
+  (replace-regexp-in-string (regexp-quote "-") "_" elisp-name t t))
+
 ;;; Primitive types
 
 (defvar libjulia-primitive-type-map
@@ -211,10 +216,5 @@
 
 (libjulia-init)
 
-
-;;; Utilities
-
-(defun libjulia-under-to-hyphen (elisp-name)
-  (replace-regexp-in-string (regexp-quote "-") "_" elisp-name t t))
 
 (provide 'libjulia)
