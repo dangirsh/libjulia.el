@@ -1,6 +1,6 @@
 (require 'ffi)
 
-(defun libjulia-elisp-to-c-name (elisp-name)
+(defun libjulia-under-to-hyphen (elisp-name)
   (replace-regexp-in-string (regexp-quote "-") "_" elisp-name t t))
 
 (defmacro libjulia-bind (name arg-types return-type)
@@ -8,7 +8,7 @@
   (message (format "Generating Julia binding for %s." name))
   `(define-ffi-function
      ,name
-     ,(libjulia-elisp-to-c-name (symbol-name name))
+     ,(libjulia-under-to-hyphen (symbol-name name))
      ,return-type
      ,arg-types
      libjulia.so))
