@@ -160,7 +160,7 @@
 
 (defun libjulia-eval-str (julia-expr-str)
   (with-ffi-string (julia-expr-c-string julia-expr-str)
-    (jl-eval-string julia-expr-c-string)))
+    (libjulia-elisp-from-julia (jl-eval-string julia-expr-c-string))))
 
 
 (defun libjulia-jl-call (julia-func-name args &optional julia-module-name)
