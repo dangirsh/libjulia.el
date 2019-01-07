@@ -8,46 +8,47 @@
 
 NOTE: This project is in-development not ready for production use! See the end of this document for notes on how to contribute.
 
-NOTE: There is a currently an effort to move this to use [[https://github.com/tromey/emacs-ffi][emacs-ffi]]. See [[file:julia-ffi.el][julia-ffi.el]]. These docs still reflect the original attempt, which directly used the dynamic module interface.
-
-Julia is designed to be [[https://docs.julialang.org/en/v1/manual/embedding/index.html%20][embeddable]]. This project uses Julia's C API to create an [[https://www.gnu.org/software/emacs/manual/html_node/elisp/Dynamic-Modules.html][Emacs dynamic module]], thereby embedding Julia into Emacs. When loaded into a running Emacs process, the dynamic module registers new Emacs Lisp functions that (indirectly) call Julia's C API functions. To see this in action, skip to the [[*Basic verification][Basic verification]] section.
+libjulia.el uses Julia's C API to [[https://docs.julialang.org/en/v1/manual/embedding/index.html%20][embed]] [[julialang.org][Julia]] into [[emacs.sexy][Emacs]] via [[https://github.com/tromey/emacs-ffi][emacs-ffi.]]
 
 * Why?
-
 ** Augmenting Julia Development Tools in Emacs
 
-One of Julia's primary shortcomings is its lack development tools. Emacs is a powerful environment for building and using development tools, especially for languages in the the Lisp family. This project gives Emacs Lisp direct and efficient access to Juila's runtime in hopes of aiding the development of features like:
+Emacs is a powerful environment for building and using development tools, especially for lispy languages like Julia. This project gives Emacs Lisp direct and efficient access to Juila's runtime to aid the development of tools like:
 
-- Structure editing (like [[http://danmidwood.com/content/2014/11/21/animated-paredit.html][paredit]], [[https://github.com/Fuco1/smartparens][smartparens]], and [[https://github.com/abo-abo/lispy][lispy]])
-- Step-by-step debugging
-- Inline expression evaluation
-- Inline macro-expansion
-- Inline views of lowered / compiled forms
-- Hooks for tools like [[https://github.com/magnars/expand-region.el][expand-region]]
-- Code auto-formatting
+- Debuggers
+- Structure editors (like [[http://danmidwood.com/content/2014/11/21/animated-paredit.html][paredit]], [[https://github.com/Fuco1/smartparens][smartparens]], and [[https://github.com/abo-abo/lispy][lispy]])
+- Inline expression evaluation, macro-expansion, and views of lowered forms
+- Auto-formatters, linters, refactoring tools
 
-Note that Emacs already has an interface to Julia via the [[https://github.com/tpapp/julia-repl][Julia REPL]], a [[https://github.com/JuliaEditorSupport/LanguageServer.jl][Language Server]], and [[https://github.com/dzop/emacs-jupyter][Jupyter kernels]]. However, none of them currently provide any of these features.
-
-Also note that most of these are considered standard features for working with Lisps in Emacs.
+Note that Emacs already has interfaces to Julia via the [[https://github.com/tpapp/julia-repl][Julia REPL]], a [[https://github.com/JuliaEditorSupport/LanguageServer.jl][Language Server]], and [[https://github.com/dzop/emacs-jupyter][Jupyter kernels]]. However, none of them provide any of these facilities.
 
 ** Augmenting Emacs with Julia
 
-Some Emacs extension could benefit from being partially written in Julia. This project directly enables this possibility.
+Some Emacs extensions could benefit from being written in Elisp + Julia. This project enables this possibility.
 
 * Getting Started
 ** Requirements
+*** System
 
-- Emacs Lisp experience. There is currently very little use of this package other than to aid in developing Emacs Lisp tools for Julia.
-- Emacs 25+ that you can build from source.
-- A =libjulia.so= from Julia 1.0+.
-  - This is in =/usr/local/lib= if you [[https://github.com/JuliaLang/julia#source-download-and-compilation][build Julia from source]] with =prefix=/usr/local= set in the =Make.user= file.
-- Perseverance. This is not (yet) a 1-click install.
-
-*NOTE: This has only been tested on Ubuntu 16.04.5 with Emacs 27.0.5 and Julia 1.0.2*.
+This has only been tested on Ubuntu 16.04.5 with Emacs 27.0.5 and Julia 1.0.2*.
 
 I suspect this works on most modern GNU/Linux systems, and that OSX can be made to work with some tweaks.
 
-** Compile Emacs
+*** Emacs
+
+You'll need Emacs 25+ built with dynamic module support, as well as the [[https://github.com/tromey/emacs-ffi][emacs-ffi]] package installed.
+
+Ensure that =ffi-module.so= built during the [[https://github.com/tromey/emacs-ffi][emacs-ffi]] installation is in your load path. One way to do this is by launching =emacs= like this:
+
+#+BEGIN_SRC shell
+LD_LIBRARY_PATH=<path-to-emacs-ffi-dir> emacs
+#+END_SRC
+
+See the tests in =emacs-ffi= to verify your installation.
+
+**** Compiling Emacs with dynamic module support
+
+TODO: Check if common distros ship Emacs with this option or not.
 
 We need to compile Emacs with module support using the =--with-modules= configure option:
 
@@ -60,47 +61,18 @@ If the build succeeds, your new Emacs executable will be =src/emacs=. Run =make 
 
 NB: You can speed up compilation significantly by using the =-j<n>= [[https://www.gnu.org/software/make/manual/html_node/Options-Summary.html][flag]] to =make= for a parallel build.
 
-** Configure shared library directories
+*** Julia
 
-(If you installed Julia to a =/usr/local/=, you can likely skip this step.)
+You'll need to [[https://github.com/JuliaLang/julia#source-download-and-compilation][build Julia 1.0+]] to generate =libjulia.so=.
 
-You need to ensure the directory containing the Julia shared library =libjulia.so= (built by default when compiling Julia) is in the list of paths =ld= searches when dynamically linking. Do this with the =ldconfig= utility or by setting =LD_LIBRARY_PATH=<julia_lib_dir>=.
-
-NB: Emacs won't load a dynamic module more than once, so you'll have to restart Emacs to test changes like this. =make test= will spawn a fresh Emacs process for you, which is helpful in cases like this.
-
-NB2: On Linux you can quickly find the library location by running =find / -name "\*libjulia.so\*".=
-
-See [[http://tldp.org/HOWTO/Program-Library-HOWTO/shared-libraries.html][this thorough document]] for information about shared libraries, =ldconfig=, and =LD_LIBRARY_PATH=.
-
-** Install the Emacs package
-
-1. Clone this repository into your Emacs load path.
-2. Run your freshly-built Emacs in an environment aware of =libjulia.so= (see previous section).
-3. Evaluate =(require 'julia)= and go through the first-load compilation steps (don't mind the =gcc= warnings).
-
-If successful, =julia-core.so= should be compiled and loaded into your Emacs process. Your =*Messages*= buffer should contain the line:
+I've been using the following settings in the top-level =Make.user= file:
 
 #+BEGIN_EXAMPLE
-Loading <install-dir>/julia-core.so (module)...done
+prefix=/usr/local
+JULIA_THREADS := 0
 #+END_EXAMPLE
 
-** Basic verification
-
-Verify the bindings work by trying to call one of the functions exposed by =julia-core.so= from Emacs Lisp. For example:
-
-#+BEGIN_SRC emacs-lisp :exports both
-(julia-eval "x = 42")
-(julia-eval "EmacsJulia.clean_sexpr(\"1\")")
-#+END_SRC
-
-#+RESULTS:
-: MethodError
-
-Notice:
-
-- There is no Emacs Lisp definition for =julia-eval=. It is implemented in C in =julia-core.c= and wraps =jl_eval_string= from Julia's C API.
-- No Julia process is spawned for this evaluation. Instead, Julia and Emacs share a single process.
-- Julia retains state between calls from Emacs Lisp.
+There is currently an issue initializing Julia via =jl_init= unless =JULIA_THREADS= is set to 0.
 
 * Development
 ** Re-building the shared library
@@ -133,7 +105,7 @@ Tests run in a separate Emacs process in "batch" mode (so no new Emacs frame wil
 From the top-level directory of this repository, run:
 
 #+BEGIN_SRC shell
-make && make test-ffi
+make test
 #+END_SRC
 
 #+RESULTS:
@@ -141,103 +113,22 @@ make && make test-ffi
 :END:
 
 * Status / Development Notes
-** Data Marshalling
-*** Emacs -> Julia
-
-Not started.
-
-For now we serialize any data from Emacs into a string representations of Julia code, then just =eval= it.
-
-e.g.
-
-#+BEGIN_EXAMPLE emacs-lisp
-(julia-within-lib-dir
-             (julia-eval-blind
-              (with-temp-buffer
-                (insert-file-contents-literally "EmacsJulia/src/EmacsJulia.jl")
-                (buffer-string))))
-#+END_EXAMPLE
-
-*** Julia -> Emacs [2/5]
-- [X] integers, floats
-- [X] strings
-- [ ] 1d arrays
-- [ ] multi-dimensional arrays
-- [ ] arbitrary serialize-able objects
-
-Maybe we can just try to serialize complex objects with =jld= (=hdf5= for Julia), then try to de-serialize on the Emacs side.
-
-** Error handling
-
-Very little at the moment.
-
-We do capture exceptions thrown by Julia and return the exception type as a string to Emacs (+ emit some stdout). This is obviously brittle and needs work.
-
-** Memory Management
-
-Current tests are too simple for exploring this.
-
-The only relevant code for this right now is in [[file:julia-core.c][julia-core.c]]:
-
-#+BEGIN_EXAMPLE c
-jl_value_t *val = jl_eval_string(str_arg);
-...
-JL_GC_PUSH1(&val);
-emacs_value emacs_val = jl_to_elisp(env, val);
-JL_GC_POP();
-#+END_EXAMPLE
-
-which ensures =val= isn't garbage collected by Julia while we convert it to an Emacs Lisp value.
-
-** Concurrency
-
-Currently, if Julia blocks, Emacs hangs. Julia is being compiled with threads enabled, so this might be avoidable.
-
-FWIW, [[https://github.com/dzop/emacs-zmq][emacs-zmq]] spawns a slave Emacs process to handle polling channels. I hope that's not necessary here.
-
-** Tests
-
-...
-
-** Benchmarks
-
-- Round-trip speed test against Julia REPL and jupy-julia
-
-** Development
-
-While we're still relying on a patched Emacs, it would be nice to:
-
-- provide a patch file for the =dlopen= tweak (one line)
-- provide a container image with the patched pre-built Emacs (for testing)
-
-** Open questions:
-
-- Can we avoid modifying the =dlopen= call in the Emacs source?
-  - This is the biggest current issue IMHO, since most users can't/won't modify their Emacs C code.
-  - Maybe it can be fixed on Julia's side? Is it OK to require that flag?
-
-- Can we build =femtolisp= as a shared library and link to it?
-  - This would allow tightly interacting with the Julia's femtolisp parser, which is callable from C.
-  - The Julia C API provides only top-level access to the parser (on purpose), but there are use-cases for tool development where it would be valuable.
-  - This will likely require a (fork of / PR to) femtolisp, as it doesn't seem to currently build objects for use in shared libraries.
-  - If the [[https://github.com/dzop/emacs-julia-parser/][emacs-julia-parser]] succeeds, this could be unnecessary.
-    - However, as there is no spec for Julia's syntax, so *the femtolisp parser is the de-facto spec*!
-
 ** Open tasks
 
 - Julia docs mention UInt128 and Int128 types, but there aren't box/unbox functions for them in =julia.h= near the others...
-
-
-- Finish data marshalling layer
-- Demo some new functionality leveraging sexprs
 - Shell for inspecting Julia's state
 - Async Julia eval
 - Determine if we can hold on to several Julia sessions
 - Determine if we can clear the state of an existing Julia session
--
+
+** Issues
+
+*** jl_init, jl_init__threading, and JULIA_THREADS
+
+Currently, the only way I've found to successfully call jl_init in the shared library is to compile Julia with =JULIA_THREADS= set to 0.
+
 
 ** Debugging Notes
-
 *** Compile libjulia with debugging symbols
 
 #+BEGIN_SRC shell :dir ~/julia
@@ -267,19 +158,7 @@ Load the debug library and do something that calls the code with the breakpoint.
 
 Use gdb to debug.
 
-
-* Misc
-** Naming Conventions
-
-The names for:
-
-  - this project
-  - the emacs library it exposes
-  - the top-level C source file
-  - the ".so" shared library
-
-all try to follow conventions already set by other Emacs dynamic modules. You can find a list [[https://github.com/emacs-pe/emacs-modules][here]]. Please let me know if you find an inconsistency.
-* Bugs to Report
+* Upstream Bugs to Report
 ** Embedding Julia docs show the use of jl_get_function, but that doesn't seem to be exported:
 
 #+BEGIN_SRC c
@@ -348,9 +227,7 @@ JL_DLLEXPORT int jl_threading_enabled(void)
 ccall(:jl_threading_enabled, Cint, ())
 #+END_EXAMPLE
 
-
 * Acknowledgments
 
-- [[https://github.com/dzop/emacs-zmq][emacs-zmq]] for inspiration and great examples. The first-load automatic compilation code was taken from here (and probably other things).
-- John Kitchin for his [[https://github.com/jkitchin/emacs-modules][module helpers]].
-- This thorough Emacs module documentation: http://phst.github.io/emacs-modules.html
+- [[https://github.com/dzop/emacs-zmq][emacs-zmq]] for the first-load automatic compilation code.
+- [[http://phst.github.io/emacs-modules.html][Emacs module documentation]]
