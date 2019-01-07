@@ -40,7 +40,7 @@ end
 
 function clean_sexpr(julia_code::String)
     ex = Meta.parse(julia_code)
-    ex = linefilter!(ex)
+    # ex = linefilter!(ex)
     clean_sexpr_impl(ex)
 end
 
