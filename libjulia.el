@@ -1,4 +1,5 @@
 (require 'ffi)
+(require 'cl-lib)
 
 ;;; Utilities
 
@@ -236,25 +237,58 @@ each iteration."
 (defun libjuila-gen-symbol-bindings ()
   (libjulia-bind-symbol jl-base-module :pointer))
 
-(defun libjulia-init ()
-  ;; Ugly workaround to being required to load libjulia with RTLD_GLOBAL. We load
-  ;; it first via the wrapper, which has a custom dlopen call. Then, emacs-ffi
-  ;; tries to re-load it via ltld, but it's already been loaded with the
-  ;; RTLD_GLOBAL flag from the wrapper. Note that ltld docs claim their dlopen
-  ;; shouldn't need RTLD_GLOBAL because "back-tracing". This doesn't seem to be
-  ;; true for libjulia...
-  (module-load "/home/dan/treemax/.spacemacs.d/layers/treemax-julia/local/libjulia/libjulia-wrapper.so")
-  ;; (libjulia--dlopen "/usr/local/lib/libjulia.so")
-  (libjulia--dlopen "libjulia-debug.so")
+(defconst libjulia-wrapper-module-file
+  (when module-file-suffix
+    (expand-file-name
+     (concat "libjulia-wrapper" module-file-suffix)
+     ;; (file-name-directory (locate-library "libjulia"))
+     (file-name-directory default-directory)))
+  "The module file for libjulia or nil if modules are not supported.")
 
-  ;; Now load the library again via emacs-ffi
-  ;; (define-ffi-library libjulia.so "libjulia.so")
-  (define-ffi-library libjulia.so "libjulia-debug.so")
+(defun libjulia-wrapper-load ()
+  (if libjulia-wrapper-module-file
+      (if (file-exists-p libjulia-wrapper-module-file)
+          (progn
+            (module-load libjulia-wrapper-module-file))
+        (when (y-or-n-p "libjulia-wrapper module not found. Build it? ")
+          (let (;; (default-directory (file-name-directory (locate-library "libjulia")))
+                (default-directory (file-name-directory default-directory)))
+            (cl-labels
+                ((load-libjulia
+                  (_buf status)
+                  (if (string= status "finished\n")
+                      (libjulia-wrapper-load)
+                    (message "Something went wrong when compiling the libjulia-wrapper module!"))
+                  (remove-hook 'compilation-finish-functions #'load-libjulia)
+                  (exit-recursive-edit)))
+              (add-hook 'compilation-finish-functions #'load-libjulia)
+              (compile "make")
+              (recursive-edit)))))
+    (user-error "Modules are not supported")))
+
+
+(defun libjulia-load ()
+  "Ugly workaround to being required to dlopen libjulia with
+  RTLD_GLOBAL set. We load it first via the wrapper, which has a
+  custom dlopen call. Then, emacs-ffi tries to re-load it via
+  ltld, but it's already been loaded with the RTLD_GLOBAL flag
+  from the wrapper. Note that ltld docs claim their dlopen
+  shouldn't need RTLD_GLOBAL, but this doesn't seem to be true
+  for libjulia..."
+  (libjulia-wrapper-load)
+  (libjulia--dlopen "libjulia.so")
+  (define-ffi-library libjulia.so "libjulia.so")
+  ;; Would be nice to do this in libjuila-gen-function-bindings with
+  ;; libjulia-bind, but that gives a sefault for some reason.
   (define-ffi-function jl-init "jl_init" :void nil libjulia.so)
-  (jl-init)
+  (jl-init))
+
+(defun libjulia-init ()
+  (libjulia-load)
   (libjuila-gen-boxers-and-unboxers)
   (libjuila-gen-function-bindings)
   (libjuila-gen-symbol-bindings))
+
 
 (libjulia-init)
 
