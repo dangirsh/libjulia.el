@@ -2,6 +2,7 @@
 
 EMACS_BUILDDIR = /home/dan/emacs-src/
 EMACS_FFIDIR = /home/dan/treemax/.spacemacs.d/layers/mine/local/ffi
+JULIA_LIBDIR = /home/dan/julia/usr/lib
 
 LIBS += -shared
 LDFLAGS = -shared
@@ -22,7 +23,7 @@ clean:
 # GDB = gdb --args
 
 test: libjulia-wrapper.so libjulia-test.el Makefile
-	LD_LIBRARY_PATH=`pwd`:$(EMACS_FFIDIR):$$LD_LIBRARY_PATH; \
+	LD_LIBRARY_PATH=`pwd`:$(EMACS_FFIDIR):$(JULIA_LIBDIR):$$LD_LIBRARY_PATH; \
 	export LD_LIBRARY_PATH; \
 	$(GDB) $(EMACS_BUILDDIR)/src/emacs -batch -L `pwd` -L $(EMACS_FFIDIR) -l ffi -l ert -l seq -l libjulia-test.el \
 	  -f ert-run-tests-batch-and-exit
