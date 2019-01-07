@@ -43,8 +43,7 @@
   (should (float-equal (libjulia-eval-str "3.14") 3.14))
 
   ;; strings
-  ;; (should (equal (libjulia-eval-str "\"Hallo\"") "Hallo"))
-  )
+  (should (equal (libjulia-eval-str "\"Hallo\"") "Hallo")))
 
 (ert-deftest test-libjulia-box-unbox ()
 
@@ -74,6 +73,13 @@
   (should (equal 8.0 (libjulia-jl-call "sqrt" '(64.0))))
   (should (equal 2 (libjulia-jl-call "+" '(1 1))))
   (should (equal t (libjulia-jl-call "!" '(nil)))))
+
+(ert-deftest test-libjulia-eval-sexpr ()
+  (should (equal 8.0 (libjulia-eval-sexpr '(call sqrt 64.0))))
+  (should (equal 2 (libjulia-eval-sexpr '(call + 1 1 ))))
+  (should (equal t (libjulia-eval-sexpr '(call ! nil)))))
+
+
 
 ;; (ert-deftest test-libjulia-null-ptr ()
 ;;   (unwind-protect

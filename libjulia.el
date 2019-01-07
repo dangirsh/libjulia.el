@@ -36,23 +36,13 @@
   (not (null (libjulia-primitive-convert julia-type :julia-type :julia-type))))
 
 (defmacro libjulia-dolist-primitive-types (&rest body)
+  "Creates a dolist form iterating over
+libjulia-primitive-type-map with julia-type and ffi-type bound at
+each iteration."
   `(dolist (type-entry libjulia-primitive-type-map)
      (pcase-let ((`(:julia-type ,julia-type  :ffi-type ,ffi-type) type-entry))
        (progn ,@body))))
 
-
-;;; Type conversion
-
-;; TODO: arrays and pointers
-(defun libjulia-primitive-julia-type-from-elisp (elisp-val)
-  (pcase elisp-val
-    ((pred integerp) "Int64")
-    ((pred floatp) "Float64")
-    ((or 'nil t) "Bool")
-    (_ (error
-        (format
-         "%s can't be converted to a primitive Julia type."
-         (type-of elisp-val))))))
 
 ;;; Arrays
 
@@ -133,25 +123,33 @@
 ;;; Value conversions
 
 (defun libjulia-elisp-from-julia (julia-val-ptr)
-  (let ((julia-type (ffi-get-c-string (jl-typeof-str julia-val-ptr))))
-    (pcase julia-type
-      ((pred libjulia-primitive-julia-type-p)
-       (libjulia-primitive-unbox julia-val-ptr julia-type))
-      ;; ("String"
-      ;;  (ffi-get-c-string (jl-string-ptr julia-val-ptr)))
-      ;; If we can't convert to an Elisp type, return as a raw user-ptr.
-      (_ ptr))))
+  (when (and julia-val-ptr (not (ffi-pointer-null-p julia-val-ptr)))
+    (let ((julia-type (ffi-get-c-string (jl-typeof-str julia-val-ptr))))
+      (pcase julia-type
+        ((pred libjulia-primitive-julia-type-p)
+         (libjulia-primitive-unbox julia-val-ptr julia-type))
+        ("String"
+         (ffi-get-c-string (jl-string-ptr julia-val-ptr)))
+        ("Symbol"
+         (ffi-get-c-string (jl-symbol-name julia-val-ptr)))
+        ;; If we can't convert to an Elisp type, return as a raw user-ptr.
+        (_ julia-val-ptr)))))
 
 (defun libjulia-julia-from-elisp (elisp-val)
-  (let ((julia-type (libjulia-primitive-julia-type-from-elisp elisp-val)))
-    (pcase elisp-val
-      ((guard (libjulia-primitive-julia-type-p julia-type))
-       (libjulia-primitive-box elisp-val julia-type))
-      ;; ((pred stringp)
-      ;;  (ffi-make-c-string (jl-string-ptr ptr)))
-      ;; If we can't convert to a Julia type, pass the raw user-ptr through.
-      ;; FIXME: check it's a user-ptr type here!
-      (_ elisp-val))))
+  (pcase elisp-val
+    ((pred integerp)
+     (libjulia-primitive-box elisp-val "Int64"))
+    ((pred floatp)
+     (libjulia-primitive-box elisp-val "Float64"))
+    ((or 'nil 't)
+     (libjulia-primitive-box elisp-val "Bool"))
+    ((pred stringp)
+     (jl_cstr_to_string (ffi-make-c-string elisp-val)))
+    ((pred symbolp)
+     (jl-symbol (ffi-make-c-string (symbol-name elisp-val))))
+    ;; If we can't convert to a Julia type, pass the raw user-ptr through.
+    ;; FIXME: check it's a user-ptr type here!
+    (_ elisp-val)))
 
 
 ;;; libjulia wrappers
@@ -160,6 +158,15 @@
   (with-ffi-string (julia-expr-c-string julia-expr-str)
     (libjulia-elisp-from-julia (jl-eval-string julia-expr-c-string))))
 
+(defun libjulia-eval-expr (julia-expr-ptr)
+  (libjulia-elisp-from-julia (jl-toplevel-eval jl-base-module julia-expr-ptr)))
+
+(defun libjulia-eval-sexpr (sexpr)
+  (libjulia-eval-expr (libjulia-expr-from-sexpr sexpr)))
+
+(defun libjulia-expr-from-sexpr (sexpr)
+  (libjulia-jl-call "Expr" sexpr))
+
 ;; WARNING: Evaluaties its argument as a Julia expression.
 (defun libjulia-get-julia-type (julia-code-str)
   (ffi-get-c-string
@@ -167,8 +174,7 @@
     (with-ffi-string (c-str-ptr julia-code-str)
       (jl-eval-string c-str-ptr)))))
 
-
-(defun libjulia-jl-call (julia-func-name elisp-args)
+(defun libjulia-jl-call (julia-func-name args)
   ;; (with-ffi-string (julia-func-name-c-str julia-func-name))
   ;; Here we reproduce the logic in julia.h for jl_get_function:
   ;; STATIC_INLINE jl_function_t *jl_get_function(jl_module_t *m, const char *name)
@@ -177,14 +183,26 @@
   ;; }
   ;; Note that jl_get_function itself is not exported.
   (let* ((julia-func-name-c-string (ffi-make-c-string julia-func-name))
-         (julia-func-symbol (jl-symbol julia-func-name-c-string))
+         (julia-func-symbol (jl-symbol-lookup julia-func-name-c-string))
          (func-ptr (jl-get-global jl-base-module julia-func-symbol))
-         (julia-args (mapcar #'libjulia-julia-from-elisp elisp-args))
+         (julia-args (mapcar #'libjulia-julia-from-elisp args))
          (nargs (length julia-args)))
     (define-ffi-array jl-call-args :pointer nargs)
     (dotimes (index nargs)
       (ffi-set-aref jl-call-args :pointer index (elt julia-args index)))
-    (libjulia-elisp-from-julia (jl-call func-ptr jl-call-args nargs))))
+    (libjulia-elisp-from-julia (jl-call func-ptr jl-call-args nargs))
+    ;; (jl-call func-ptr jl-call-args nargs)
+    ))
+
+
+;;; Reimplementations
+;; We can't bind to some things in julia.h (like static functions and #defines)
+;; So, we reimplement them here in elisp.
+
+(defun jl-symbol-name (julia-symbol-ptr)
+  ;; FIXME: Don't hardcode the struct size!
+  (let ((sizeof-jl-sym-t 24))
+    (ffi-get-c-string (ffi-pointer+ julia-symbol-ptr sizeof-jl-sym-t))))
 
 
 ;;; Initialization
@@ -199,10 +217,16 @@
   (libjulia-bind jl-eval-string
                  (:pointer)
                  :pointer)
+  (libjulia-bind jl-toplevel-eval
+                 (:pointer :pointer)
+                 :pointer)
   (libjulia-bind jl-get-global
                  (:pointer :pointer)
                  :pointer)
   (libjulia-bind jl-symbol
+                 (:pointer)
+                 :pointer)
+  (libjulia-bind jl-symbol-lookup
                  (:pointer)
                  :pointer)
   (libjulia-bind jl-call
