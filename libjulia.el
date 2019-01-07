@@ -3,8 +3,12 @@
 
 ;;; Utilities
 
-(defun libjulia-underscore-to-hyphen (elisp-name)
+(defun libjulia-hyphen-to-underscore (elisp-name)
   (replace-regexp-in-string (regexp-quote "-") "_" elisp-name t t))
+
+(defun libjulia-remove-colon (sym-name)
+  ;; FIXME: should only replace FIRST colon
+  (replace-regexp-in-string (regexp-quote ":") "" sym-name t t))
 
 ;;; Primitive types
 
@@ -60,7 +64,7 @@
   "Wrapper around define-ffi-function from the ffi library."
   `(define-ffi-function
      ,name
-     ,(libjulia-underscore-to-hyphen (symbol-name name))
+     ,(libjulia-hyphen-to-underscore (symbol-name name))
      ,return-type
      ,arg-types
      libjulia.so))
@@ -74,7 +78,7 @@
   `(setq ,sym
          (ffi--mem-ref
           (ffi--dlsym
-           ,(libjulia-underscore-to-hyphen (symbol-name sym)) (libjulia.so))
+           ,(libjulia-hyphen-to-underscore (symbol-name sym)) (libjulia.so))
           ,ffi-type)))
 
 
@@ -127,7 +131,9 @@
         ("String"
          (ffi-get-c-string (jl-string-ptr julia-val-ptr)))
         ("Symbol"
-         (ffi-get-c-string (jl-symbol-name julia-val-ptr)))
+         (intern (format ":%s"
+                         (ffi-get-c-string
+                          (jl-symbol-name julia-val-ptr)))))
         ;; If we can't convert to an Elisp type, return as a raw user-ptr.
         (_ julia-val-ptr)))))
 
@@ -140,9 +146,11 @@
     ((or 'nil 't)
      (libjulia-primitive-box elisp-val "Bool"))
     ((pred stringp)
-     (jl_cstr_to_string (ffi-make-c-string elisp-val)))
+     (jl-cstr-to-string (ffi-make-c-string elisp-val)))
     ((pred symbolp)
-     (jl-symbol (ffi-make-c-string (symbol-name elisp-val))))
+     (jl-symbol (ffi-make-c-string
+                 (libjulia-remove-colon
+                  (symbol-name elisp-val)))))
     ;; If we can't convert to a Julia type, pass the raw user-ptr through.
     ;; FIXME: check it's a user-ptr type here!
     (_ elisp-val)))
@@ -152,43 +160,18 @@
 
 (defun libjulia-eval-str (julia-expr-str)
   (with-ffi-string (julia-expr-c-string julia-expr-str)
-    (libjulia-elisp-from-julia (jl-eval-string julia-expr-c-string))))
+    (jl-eval-string julia-expr-c-string)))
 
-(defun libjulia-eval-expr (julia-expr-ptr)
-  (libjulia-elisp-from-julia (jl-toplevel-eval jl-base-module julia-expr-ptr)))
 
-(defun libjulia-eval-sexpr (sexpr)
-  (libjulia-eval-expr (libjulia-expr-from-sexpr sexpr)))
-
-(defun libjulia-expr-from-sexpr (sexpr)
-  (libjulia-jl-call "Expr" sexpr))
-
-;; WARNING: Evaluaties its argument as a Julia expression.
-(defun libjulia-get-julia-type (julia-code-str)
-  (ffi-get-c-string
-   (jl-typeof-str
-    (with-ffi-string (c-str-ptr julia-code-str)
-      (jl-eval-string c-str-ptr)))))
-
-(defun libjulia-jl-call (julia-func-name args)
-  ;; (with-ffi-string (julia-func-name-c-str julia-func-name))
-  ;; Here we reproduce the logic in julia.h for jl_get_function:
-  ;; STATIC_INLINE jl_function_t *jl_get_function(jl_module_t *m, const char *name)
-  ;; {
-  ;; return (jl_function_t*)jl_get_global(m, jl_symbol(name));
-  ;; }
-  ;; Note that jl_get_function itself is not exported.
-  (let* ((julia-func-name-c-string (ffi-make-c-string julia-func-name))
-         (julia-func-symbol (jl-symbol-lookup julia-func-name-c-string))
-         (func-ptr (jl-get-global jl-base-module julia-func-symbol))
+(defun libjulia-jl-call (julia-func-name args &optional julia-module-name)
+  (let* ((julia-module (libjulia-get-module julia-module-name))
+         (func-ptr (jl-get-function julia-module julia-func-name))
          (julia-args (mapcar #'libjulia-julia-from-elisp args))
          (nargs (length julia-args)))
     (define-ffi-array jl-call-args :pointer nargs)
     (dotimes (index nargs)
       (ffi-set-aref jl-call-args :pointer index (elt julia-args index)))
-    (libjulia-elisp-from-julia (jl-call func-ptr jl-call-args nargs))
-    ;; (jl-call func-ptr jl-call-args nargs)
-    ))
+    (libjulia-elisp-from-julia (jl-call func-ptr jl-call-args nargs))))
 
 
 ;;; Reimplementations
@@ -200,10 +183,41 @@
   (let ((sizeof-jl-sym-t 24))
     (ffi-get-c-string (ffi-pointer+ julia-symbol-ptr sizeof-jl-sym-t))))
 
+(defun jl-get-function (julia-module-ptr julia-func-name)
+  "Elisp version of jl_get_function from julia.h:
+
+  STATIC_INLINE jl_function_t *jl_get_function(jl_module_t *m, const char *name) {
+     return (jl_function_t*)jl_get_global(m, jl_symbol(name));
+  }"
+  (libjulia-safe-get
+   (jl-get-global julia-module-ptr (jl-symbol-lookup
+                                    (ffi-make-c-string julia-func-name)))
+   (format "Failed to find function %s." julia-func-name)))
+
+;;; Helpers
+
+(defmacro libjulia-safe-get (unsafe-get-form error-msg)
+  `(let ((ptr ,unsafe-get-form))
+     (when (ffi-pointer-null-p ptr)
+       (error ,error-msg))
+     ptr))
+
+(defun libjulia-get-module (&optional julia-module-name)
+  "Default is Base"
+  ;; TODO: assert module-name is an elisp string or nil
+  (libjulia-safe-get
+   (jl-get-global jl-main-module
+                  (jl-symbol
+                   (ffi-make-c-string (or julia-module-name "Base"))))
+   (format "Failed to lookup module %s" julia-module-name)))
+
 
 ;;; Initialization
 
 (defun libjuila-gen-function-bindings ()
+  (libjulia-bind jl-cstr-to-string
+                 (:pointer)
+                 :pointer)
   (libjulia-bind jl-string-ptr
                  (:pointer)
                  :pointer)
@@ -230,7 +244,12 @@
                  :pointer))
 
 (defun libjuila-gen-symbol-bindings ()
-  (libjulia-bind-symbol jl-base-module :pointer))
+  (libjulia-bind-symbol jl-main-module :pointer)
+  (libjulia-bind-symbol jl-base-module :pointer)
+  (when (or
+         (ffi-pointer-null-p jl-main-module)
+         (ffi-pointer-null-p jl-base-module))
+    (error "Failure getting pointers to core Julia module(s).")))
 
 (defconst libjulia-wrapper-module-file
   (when module-file-suffix
@@ -262,17 +281,23 @@
     (user-error "Modules are not supported")))
 
 
+(defun libjulia-load-julia-support ()
+  (libjulia-eval-str (format
+                      "cd(\"%s\"); using Pkg; Pkg.activate(\".\"); using EmacsJulia"
+                      (concat default-directory "EmacsJulia")))
+  (libjulia-eval-str "EmacsJulia.clean_sexpr"))
+
 (defun libjulia-load ()
   "Ugly workaround to being required to dlopen libjulia with
   RTLD_GLOBAL set. We load it first via the wrapper, which has a
   custom dlopen call. Then, emacs-ffi tries to re-load it via
-  ltld, but it's already been loaded with the RTLD_GLOBAL flag
+  pltld, but it's already been loaded with the RTLD_GLOBAL flag
   from the wrapper. Note that ltld docs claim their dlopen
   shouldn't need RTLD_GLOBAL, but this doesn't seem to be true
   for libjulia..."
   (libjulia-wrapper-load)
-  (libjulia--dlopen "libjulia.so")
-  (define-ffi-library libjulia.so "libjulia")
+  (libjulia--dlopen "libjulia-debug.so")
+  (define-ffi-library libjulia.so "libjulia-debug")
   ;; Would be nice to do this in libjuila-gen-function-bindings with
   ;; libjulia-bind, but that gives a sefault for some reason.
   (define-ffi-function jl-init "jl_init" :void nil libjulia.so)
@@ -282,7 +307,8 @@
   (libjulia-load)
   (libjuila-gen-all-boxers-and-unboxers)
   (libjuila-gen-function-bindings)
-  (libjuila-gen-symbol-bindings))
+  (libjuila-gen-symbol-bindings)
+  (libjulia-load-julia-support))
 
 
 (libjulia-init)

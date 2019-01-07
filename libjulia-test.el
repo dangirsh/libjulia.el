@@ -16,18 +16,18 @@
   (should-not (libjulia-primitive-julia-type-p "String"))
   (should-not (libjulia-primitive-julia-type-p "SomethingElse")))
 
-(ert-deftest test-libjulia-get-type ()
-  ;; Ints
-  (should (equal (libjulia-get-julia-type "3") "Int64"))
-  (should (equal (libjulia-get-julia-type "typemax(Int32)") "Int32"))
-  (should (equal (libjulia-get-julia-type "typemin(Int64)") "Int64"))
-  (should (equal (libjulia-get-julia-type "0x1") "UInt8"))
-  ;; negating an unsigned literal creates an unsigned 2s complement
-  (should (equal (libjulia-get-julia-type "-0x1000") "UInt16"))
+;; (ert-deftest test-libjulia-get-type ()
+;;   ;; Ints
+;;   (should (equal (libjulia-get-julia-type "3") "Int64"))
+;;   (should (equal (libjulia-get-julia-type "typemax(Int32)") "Int32"))
+;;   (should (equal (libjulia-get-julia-type "typemin(Int64)") "Int64"))
+;;   (should (equal (libjulia-get-julia-type "0x1") "UInt8"))
+;;   ;; negating an unsigned literal creates an unsigned 2s complement
+;;   (should (equal (libjulia-get-julia-type "-0x1000") "UInt16"))
 
-  ;; floats
-  (should (equal (libjulia-get-julia-type "3.14f0") "Float32"))
-  (should (equal (libjulia-get-julia-type "3.14") "Float64")))
+;;   ;; floats
+;;   (should (equal (libjulia-get-julia-type "3.14f0") "Float32"))
+;;   (should (equal (libjulia-get-julia-type "3.14") "Float64")))
 
 ;; Implicitly tests unboxing
 (ert-deftest test-libjulia-eval-str ()
@@ -54,13 +54,13 @@
   (test-roundrip-is-identity 3.4 "Float64")
   (test-roundrip-is-identity 't "Bool"))
 
-(ert-deftest test-ffi-array ()
-  (define-ffi-array test-array :int64 8)
-  (ffi-set-aref test-array :int64 0 42)
-  (should (equal (ffi-aref test-array :int64 0) 42))
+;; (ert-deftest test-ffi-array ()
+;;   (define-ffi-array test-array :int64 8)
+;;   (ffi-set-aref test-array :int64 0 42)
+;;   (should (equal (ffi-aref test-array :int64 0) 42))
 
-  (ffi-set-aref test-array :int64 7 23)
-  (should (equal (ffi-aref test-array :int64 7) 23)))
+;;   (ffi-set-aref test-array :int64 7 23)
+;;   (should (equal (ffi-aref test-array :int64 7) 23)))
 
 
 (ert-deftest test-libjulia-jl-call ()
