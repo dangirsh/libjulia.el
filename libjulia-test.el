@@ -42,8 +42,8 @@
 (ert-deftest test-libjulia-box-unbox ()
 
   (defun box-unbox (elisp-val julia-type)
-    (let ((box (libjulia-get-jl-box-sym julia-type))
-          (unbox (libjulia-get-jl-unbox-sym julia-type)))
+    (let ((box (libjulia--get-jl-box-sym julia-type))
+          (unbox (libjulia--get-jl-unbox-sym julia-type)))
       (funcall unbox (funcall box elisp-val))))
 
 
