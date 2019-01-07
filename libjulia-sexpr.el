@@ -3,7 +3,12 @@
 ;;; Exprs and Sexprs
 
 (defun libjulia-expr-from-sexpr (sexpr)
-  (libjulia-jl-call "Expr" sexpr))
+  (if (listp sexpr)
+      ;; recursively build an Expr object
+      (libjulia-jl-call "Expr" `(,(car sexpr)
+                                 ,(mapcar #'libjulia-expr-from-sexpr (cdr sexpr))))
+    ;; atoms are their own exprs
+    sexpr))
 
 (defun libjulia-eval-expr (julia-expr-ptr &optional julia-module-name)
   (libjulia-elisp-from-julia
@@ -15,11 +20,19 @@
   (libjulia-eval-expr (libjulia-expr-from-sexpr sexpr) julia-module-name))
 
 (defun libjulia-sexpr-from-julia (julia-src-str)
-  (read
-   (libjulia-jl-call "clean_sexpr" `(,julia-src-str) "EmacsJulia")))
+  (read (libjulia-jl-call "clean_sexpr" `(,julia-src-str) "EmacsJulia")))
 
-(setq test-sexpr (read (libjulia-sexpr-from-julia "1 + 1")))
+;; (defun libjulia-edebug-eval-defun (fn edebug-it)
+;;   (let ((eval libjulia-eval-sexpr)
+;;         (funcall fn edebug-it))))
 
-(libjulia-eval-sexpr test-sexpr)
+;; (advice-add 'edebug-eval-defun :around #'libjulia-edebug-eval-defun)
 
-(provide 'libjulia-sexpr)
+
+(define-derived-mode julia-sexpr-mode emacs-lisp-mode "JuliaSexpr"
+  "Major mode for editing julia code as sexprs.")
+
+(defun lispy--eval-julia-sexpr (str)
+  (libjulia-eval-sexpr (read str)))
+
+(provide 'julia-sexpr-mode)

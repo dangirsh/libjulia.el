@@ -6,5 +6,5 @@
            (libjulia-sexpr-from-julia "1 + 1")
            '(:call :+ 1 1)))
   (should (equal (libjulia-eval-sexpr
-                  (libjulia-sexpr-from-julia "1 + 1"))
+                  (libjulia-sexpr-from-julia "a = 1; a + a"))
                  2)))
