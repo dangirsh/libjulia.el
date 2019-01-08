@@ -132,8 +132,7 @@
          (ffi-get-c-string (jl-string-ptr julia-val-ptr)))
         ("Symbol"
          (intern (format ":%s"
-                         (ffi-get-c-string
-                          (jl-symbol-name julia-val-ptr)))))
+                         (jl-symbol-name julia-val-ptr))))
         ;; If we can't convert to an Elisp type, return as a raw user-ptr.
         (_ julia-val-ptr)))))
 
