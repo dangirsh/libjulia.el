@@ -20,7 +20,7 @@ clean:
 	rm *.o *.so
 
 # Uncomment this to debug via "make test".
-# GDB = gdb --args
+GDB = gdb --args
 
 test: libjulia-wrapper.so libjulia-test.el Makefile
 	LD_LIBRARY_PATH=`pwd`:$(EMACS_FFIDIR):$(JULIA_LIBDIR):$$LD_LIBRARY_PATH; \

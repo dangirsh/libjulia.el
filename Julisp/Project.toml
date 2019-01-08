@@ -1,7 +1,0 @@
-name = "Julisp"
-uuid = "90dd4826-0bbe-11e9-155e-1ffa606167b7"
-authors = ["Dan Girshovich <dan@rigetti.com>"]
-version = "0.1.0"
-
-[deps]
-MacroTools = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
