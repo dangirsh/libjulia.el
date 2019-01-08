@@ -281,12 +281,6 @@
     (user-error "Modules are not supported")))
 
 
-(defun libjulia-load-julia-support ()
-  (libjulia-eval-str (format
-                      "cd(\"%s\"); using Pkg; Pkg.activate(\".\"); using EmacsJulia"
-                      (concat default-directory "EmacsJulia")))
-  (libjulia-eval-str "EmacsJulia.clean_sexpr"))
-
 (defun libjulia-load ()
   "Ugly workaround to being required to dlopen libjulia with
   RTLD_GLOBAL set. We load it first via the wrapper, which has a
@@ -307,8 +301,7 @@
   (libjulia-load)
   (libjuila-gen-all-boxers-and-unboxers)
   (libjuila-gen-function-bindings)
-  (libjuila-gen-symbol-bindings)
-  (libjulia-load-julia-support))
+  (libjuila-gen-symbol-bindings))
 
 
 (libjulia-init)

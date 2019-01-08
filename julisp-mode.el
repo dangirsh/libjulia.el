@@ -7,28 +7,28 @@
     (:assign (jl-symbol (ffi-make-c-string ":(=)")))
     (_ (libjulia-julia-from-elisp head))))
 
-(defun julia-expr-from-sexpr (sexpr)
+(defun julisp-expr-from-sexpr (sexpr)
   (if (listp sexpr)
       ;; recursively build an Expr object
       (libjulia-jl-call "Expr" `(,(julisp-elisp-head-to-julia (car sexpr))
-                                 ,@(mapcar #'libjulia-expr-from-sexpr (cdr sexpr))))
+                                 ,@(mapcar #'julisp-expr-from-sexpr (cdr sexpr))))
     ;; atoms are their own exprs
     (libjulia-julia-from-elisp sexpr)))
 
-(defun julia-eval-expr (julia-expr-ptr &optional julia-module-name)
+(defun julisp-eval-expr (julia-expr-ptr &optional julia-module-name)
   (libjulia-elisp-from-julia
    (jl-toplevel-eval
     (libjulia-get-module julia-module-name)
     julia-expr-ptr)))
 
-(defun julia-eval-sexpr (sexpr &optional julia-module-name)
-  (libjulia-eval-expr (libjulia-expr-from-sexpr sexpr) julia-module-name))
+(defun julisp-eval-sexpr (sexpr &optional julia-module-name)
+  (julisp-eval-expr (julisp-expr-from-sexpr sexpr) julia-module-name))
 
 (defun julisp-sexpr-from-julia (julia-src-str)
   (read (libjulia-jl-call "clean_sexpr" `(,julia-src-str) "Julisp")))
 
-;; (defun julia-edebug-eval-defun (fn edebug-it)
-;;   (let ((eval libjulia-eval-sexpr)
+;; (defun julisp-edebug-eval-defun (fn edebug-it)
+;;   (let ((eval julisp-eval-sexpr)
 ;;         (funcall fn edebug-it))))
 
 ;; (advice-add 'edebug-eval-defun :around #'libjulia-edebug-eval-defun)
