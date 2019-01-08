@@ -1,4 +1,4 @@
-#+TITLE: Emacs Julia
+#+TITLE: libjulia.el
 
 #+PROPERTY: header-args :eval never-export :noweb yes :mkdirp yes :dir ~/treemax/.spacemacs.d/layers/treemax-julia/local/libjulia
 #+PROPERTY: header-args:shell :results output verbatim drawer replace :tangle-mode (identity #o755)
@@ -126,7 +126,6 @@ make test
 *** jl_init, jl_init__threading, and JULIA_THREADS
 
 Currently, the only way I've found to successfully call jl_init in the shared library is to compile Julia with =JULIA_THREADS= set to 0.
-
 
 ** Debugging Notes
 *** Compile libjulia with debugging symbols
