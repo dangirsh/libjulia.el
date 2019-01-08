@@ -34,10 +34,15 @@
 ;; (advice-add 'edebug-eval-defun :around #'libjulia-edebug-eval-defun)
 
 (defun julisp-load ()
-  (message "Loading Julisp Julia module from %s." (concat (file-name-directory (locate-library "julisp-mode")) "Julisp"))
-  (libjulia-eval-str (format
-                      "cd(\"%s\"); using Pkg; Pkg.activate(\".\"); using Julisp"
-                      (concat (file-name-directory (locate-library "julisp-mode")) "Julisp")))
+  (let* ((this-dir
+          (if (locate-library "julisp-mode")
+              (file-name-directory (locate-library "julisp-mode"))
+            default-directory))
+         (module-dir (concat this-dir "Julisp")))
+    (message "Loading Julisp Julia package from %s." module-dir)
+    (libjulia-eval-str (format
+                        "cd(\"%s\"); using Pkg; Pkg.activate(\".\"); using Julisp"
+                        module-dir)))
   ;; (async-start
   ;;  ;; What to do in the child process
   ;;  (lambda ()
