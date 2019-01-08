@@ -1,4 +1,4 @@
-module EmacsJulia
+module Julisp
 
 using MacroTools: postwalk
 
