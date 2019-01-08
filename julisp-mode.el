@@ -4,7 +4,7 @@
 
 (defun julisp-elisp-head-to-julia (head)
   (pcase head
-    (:assign (jl-symbol (ffi-make-c-string ":(=)")))
+    (:assign (jl-symbol (ffi-make-c-string "(=)")))
     (_ (libjulia-julia-from-elisp head))))
 
 (defun julisp-expr-from-sexpr (sexpr)
